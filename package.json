@@ -30,6 +30,7 @@
     "@react-three/fiber": "^9.6.1",
     "@supabase/supabase-js": "^2.110.8",
     "@tursodatabase/serverless": "^1.2.3",
+    "@vercel/speed-insights": "^2.0.0",
     "axios": "^1.18.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
