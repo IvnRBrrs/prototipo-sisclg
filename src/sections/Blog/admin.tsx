@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { AdminProps } from '../../cms/types'
-import { fetchBlogPosts, createBlogPost, updateBlogPost, deleteBlogPost, fetchBlogPost } from '../../cms/api'
+import { fetchBlogPostsAdmin, createBlogPost, updateBlogPost, deleteBlogPost, fetchBlogPostAdmin } from '../../cms/api'
 import { getCachedBlogPostsSync, invalidateCache } from '../../cms/contentCache'
 import ImagePickerModal from '../../admin/ImagePickerModal'
 
@@ -28,7 +28,7 @@ export default function BlogAdmin({ content, onUpdate }: AdminProps) {
 
   const loadPosts = async () => {
     try {
-      const data = await fetchBlogPosts({ page, limit: 10, search })
+      const data = await fetchBlogPostsAdmin({ page, limit: 10, search })
       setPosts(data.posts)
       setTotal(data.total)
     } catch {} finally { setLoading(false) }
@@ -44,7 +44,7 @@ export default function BlogAdmin({ content, onUpdate }: AdminProps) {
 
   const editPost = async (id: string) => {
     try {
-      const post = await fetchBlogPost(id)
+      const post = await fetchBlogPostAdmin(id)
       setForm({
         title: post.title || '',
         subtitle: post.subtitle || '',

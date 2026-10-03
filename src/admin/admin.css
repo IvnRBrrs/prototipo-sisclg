@@ -1799,3 +1799,143 @@
   outline: none;
   border-color: var(--primary);
 }
+
+/* ===== Seletor de Organização (login super_admin) ===== */
+.org-picker-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 14px;
+  border: 1px solid var(--primary-light);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.org-picker-item:hover {
+  border-color: var(--primary);
+  background: rgba(29, 78, 216, 0.04);
+}
+
+.org-picker-item strong {
+  color: var(--primary-dark);
+  font-size: 0.92rem;
+}
+
+.org-picker-item span {
+  color: var(--text-light);
+  font-size: 0.75rem;
+}
+
+/* ===== Site Principal (publicar organização no site público) ===== */
+.org-principal-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border: 1px solid var(--primary-light);
+  border-radius: 8px;
+  background: rgba(29, 78, 216, 0.04);
+  margin-bottom: 16px;
+  font-size: 0.88rem;
+}
+
+.org-site-switch {
+  position: relative;
+  display: inline-block;
+  width: 42px;
+  height: 23px;
+  flex-shrink: 0;
+}
+
+.org-site-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.org-site-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #c4c4c4;
+  border-radius: 23px;
+  transition: background 0.2s;
+}
+
+.org-site-slider:before {
+  content: '';
+  position: absolute;
+  height: 17px;
+  width: 17px;
+  left: 3px;
+  bottom: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.org-site-switch input:checked + .org-site-slider {
+  background: #16a34a;
+}
+
+.org-site-switch input:checked + .org-site-slider:before {
+  transform: translateX(19px);
+}
+
+.org-site-switch input:focus-visible + .org-site-slider {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ===== Chip da organização ativa (sidebar) ===== */
+.admin-org-chip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 8px 0 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--primary-light);
+  border-radius: 8px;
+  background: rgba(29, 78, 216, 0.06);
+}
+
+.admin-org-chip-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-org-chip .btn {
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.org-active-rail {
+  position: relative;
+}
+
+.org-active-rail .org-dot {
+  background: #16a34a;
+  right: -4px;
+  top: -4px;
+  width: 8px;
+  height: 8px;
+  min-width: 8px;
+  border-radius: 50%;
+}

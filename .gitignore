@@ -32,3 +32,8 @@ data/
 .env
 .env.*
 !.env.example
+
+# Playwright (testes de UI)
+test-results/
+playwright-report/
+e2e/artifacts/

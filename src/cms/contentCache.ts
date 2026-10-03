@@ -1,4 +1,4 @@
-import api, { fetchContent, fetchPages, fetchPageContent, fetchImages, fetchMessages } from './api'
+import api, { fetchContent, fetchPages, fetchPageContent, fetchImages, fetchMessages, fetchContentAdmin, fetchPagesAdmin, fetchPageContentAdmin } from './api'
 
 const PREFIX = 'cms_'
 const TTL = 60 * 60 * 1000
@@ -29,15 +29,29 @@ export function clearMemCache(id?: string) {
 }
 
 /** Remove a cache entry from BOTH memory and localStorage.
- *  The next fetch*Cached() call for this id will hit the network. */
+ * The next fetch*Cached() call for this id will hit the network.
+ * Também remove o equivalente do painel (sufixo _admin), se existir. */
+const ADMIN_TWIN: Record<string, string> = {
+  'global_content': 'global_content_admin',
+  'pages': 'pages_admin',
+}
 export function invalidateCache(id: string) {
   clearMemCache(id)
   try { localStorage.removeItem(ck(id)) } catch {}
+  let twin = ADMIN_TWIN[id]
+  if (!twin && id.startsWith('page_')) twin = 'page_admin_' + id.slice('page_'.length)
+  if (twin) {
+    clearMemCache(twin)
+    try { localStorage.removeItem(ck(twin)) } catch {}
+  }
 }
 
 /** Wipe ALL cached data (memory + localStorage). Used when switching the
  *  active organization in the CMS dashboard, so stale data from another
- *  company is never shown. */
+ *  company is never shown.
+ *  IMPORTANTE: preserva as chaves de SESSÃO (cms_token, cms_company_id) —
+ *  apagá-las derrubava o login ao trocar de organização (401 em loop). */
+const SESSION_KEYS = new Set(['cms_token', 'cms_company_id', 'supabase_token'])
 export function invalidateAllCache() {
   _memCache.clear()
   _pendingFetches.clear()
@@ -45,7 +59,7 @@ export function invalidateAllCache() {
     const keys: string[] = []
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i)
-      if (k && k.startsWith(PREFIX)) keys.push(k)
+      if (k && k.startsWith(PREFIX) && !SESSION_KEYS.has(k)) keys.push(k)
     }
     keys.forEach(k => localStorage.removeItem(k))
   } catch {}
@@ -115,6 +129,13 @@ export function getCachedPagesSync(): any[] | null {
   const mem = readMemCache<any[]>('pages')
   if (mem) return mem.d
   const c = getCached<any[]>('pages')
+  return c ? c.d : null
+}
+
+export function getCachedPagesSyncAdmin(): any[] | null {
+  const mem = readMemCache<any[]>('pages_admin')
+  if (mem) return mem.d
+  const c = getCached<any[]>('pages_admin')
   return c ? c.d : null
 }
 
@@ -208,6 +229,14 @@ export async function fetchContentCached(): Promise<{ data: Record<string, strin
   } catch { return { data: {}, cached: false } }
 }
 
+// Variantes do PAINEL: conteúdo da própria organização, sem a substituição do
+// "site principal" — o editor do CMS sempre edita o que exibe.
+export async function fetchContentCachedAdmin(): Promise<{ data: Record<string, string>; cached: boolean }> {
+  try {
+    return await fetchWithCache('global_content_admin', () => fetchContentAdmin())
+  } catch { return { data: {}, cached: false } }
+}
+
 export async function fetchPagesCached(): Promise<{ data: any[]; cached: boolean }> {
   try {
     const id = 'pages'
@@ -222,6 +251,28 @@ export async function fetchPagesCached(): Promise<{ data: any[]; cached: boolean
     if (!result || !Array.isArray(result.data)) return { data: [], cached: false }
     return result as { data: any[]; cached: boolean }
   } catch { return { data: [], cached: false } }
+}
+
+export async function fetchPagesCachedAdmin(): Promise<{ data: any[]; cached: boolean }> {
+  try {
+    const id = 'pages_admin'
+    const mem = readMemCache<any[]>(id)
+    if (mem && Array.isArray(mem.d)) return { data: mem.d, cached: true }
+
+    const raw = getCached<any[]>(id)
+    if (raw && !Array.isArray(raw.d)) {
+      try { localStorage.removeItem(ck(id)) } catch {}
+    }
+    const result = await fetchWithCache(id, () => fetchPagesAdmin())
+    if (!result || !Array.isArray(result.data)) return { data: [], cached: false }
+    return result as { data: any[]; cached: boolean }
+  } catch { return { data: [], cached: false } }
+}
+
+export async function fetchPageContentCachedAdmin(slug: string): Promise<{ data: Record<string, string>; cached: boolean }> {
+  try {
+    return await fetchWithCache('page_admin_' + slug, () => fetchPageContentAdmin(slug))
+  } catch { return { data: {}, cached: false } }
 }
 
 export async function fetchImagesCached(): Promise<{ data: any[]; cached: boolean }> {

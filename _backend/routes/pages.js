@@ -1,11 +1,13 @@
 import { Router } from 'express'
 import { authMiddleware, requireRole } from '../middleware/auth.js'
 import { ROLES } from '../roles.js'
+import { resolveSiteCompany } from '../siteSource.js'
 
 const router = Router()
 
 router.get('/', async (req, res) => {
   try {
+    const { effective, base } = await resolveSiteCompany(req)
     const result = await req.db.execute({
       sql: `
       SELECT p.*, pc.key as content_key, pc.value as content_value
@@ -14,7 +16,7 @@ router.get('/', async (req, res) => {
       WHERE p.company_id = ?
       ORDER BY p.menu_order, p.slug
     `,
-      args: [req.company_id || 'default'],
+      args: [effective],
     })
 
     const pageMap = {}
@@ -39,7 +41,47 @@ router.get('/', async (req, res) => {
       }
     }
 
-    res.json(Object.values(pageMap))
+    // Fallback: páginas (e seus conteúdos) que a organização não tiver vêm do
+    // template da 'default' — somente para o site público.
+    if (base && base !== effective) {
+      const baseResult = await req.db.execute({
+        sql: `
+        SELECT p.*, pc.key as content_key, pc.value as content_value
+        FROM pages p
+        LEFT JOIN page_content pc ON pc.page_slug = p.slug AND pc.company_id = p.company_id
+        WHERE p.company_id = ?
+        ORDER BY p.menu_order, p.slug
+      `,
+        args: [base],
+      })
+      const baseMap = {}
+      for (const row of baseResult.rows) {
+        if (!baseMap[row.slug]) {
+          baseMap[row.slug] = {
+            slug: row.slug,
+            title: row.title,
+            show_in_menu: !!row.show_in_menu,
+            parent_slug: row.parent_slug,
+            menu_order: row.menu_order,
+            created_at: row.created_at,
+            content: {},
+          }
+        }
+        if (row.content_key) {
+          try {
+            baseMap[row.slug].content[row.content_key] = JSON.parse(row.content_value)
+          } catch {
+            baseMap[row.slug].content[row.content_key] = row.content_value
+          }
+        }
+      }
+      for (const slug of Object.keys(baseMap)) {
+        if (!pageMap[slug]) pageMap[slug] = baseMap[slug]
+      }
+    }
+
+    const pages = Object.values(pageMap).sort((a, b) => (a.menu_order || 0) - (b.menu_order || 0))
+    res.json(pages)
   } catch (err) {
     console.error(`[api 500] ${res.req.method} ${res.req.originalUrl}`, err)
     res.status(500).json({ error: String(err) })
@@ -51,10 +93,19 @@ function normSlug(s) { return (s || '').replace(/^\/+|\/+$/g, '') }
 router.get('/:slug', async (req, res) => {
   const slug = normSlug(req.params.slug)
   try {
-    const result = await req.db.execute({
+    const { effective, base } = await resolveSiteCompany(req)
+    let result = await req.db.execute({
       sql: 'SELECT * FROM pages WHERE slug = ? AND company_id = ?',
-      args: [slug, req.company_id || 'default'],
+      args: [slug, effective],
     })
+    let company = effective
+    if (result.rows.length === 0 && base && base !== effective) {
+      result = await req.db.execute({
+        sql: 'SELECT * FROM pages WHERE slug = ? AND company_id = ?',
+        args: [slug, base],
+      })
+      company = base
+    }
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Page not found' })
@@ -63,7 +114,7 @@ router.get('/:slug', async (req, res) => {
     const page = result.rows[0]
     const contentResult = await req.db.execute({
       sql: 'SELECT key, value FROM page_content WHERE page_slug = ? AND company_id = ?',
-      args: [slug, req.company_id || 'default'],
+      args: [slug, company],
     })
 
     const content = {}
@@ -72,6 +123,22 @@ router.get('/:slug', async (req, res) => {
         content[row.key] = JSON.parse(row.value)
       } catch {
         content[row.key] = row.value
+      }
+    }
+    // Fallback por-chave do conteúdo da página para o template da 'default'.
+    if (base && base !== effective && company === effective) {
+      const baseContent = await req.db.execute({
+        sql: 'SELECT key, value FROM page_content WHERE page_slug = ? AND company_id = ?',
+        args: [slug, base],
+      })
+      for (const row of baseContent.rows) {
+        if (content[row.key] === undefined) {
+          try {
+            content[row.key] = JSON.parse(row.value)
+          } catch {
+            content[row.key] = row.value
+          }
+        }
       }
     }
 
@@ -178,20 +245,38 @@ router.put('/:slug', authMiddleware, requireRole(ROLES.SUPER_ADMIN, ROLES.EDITOR
 router.get('/:slug/content', async (req, res) => {
   const slug = normSlug(req.params.slug)
   try {
-    const company_id = req.company_id || 'default'
-    const pageExists = await req.db.execute({ sql: 'SELECT 1 FROM pages WHERE slug = ? AND company_id = ?', args: [slug, company_id] })
-    if (pageExists.rows.length === 0) {
+    const { effective, base } = await resolveSiteCompany(req)
+    const pageExists = await req.db.execute({ sql: 'SELECT 1 FROM pages WHERE slug = ? AND company_id = ?', args: [slug, effective] })
+    if (pageExists.rows.length === 0 && base && base !== effective) {
+      const basePage = await req.db.execute({ sql: 'SELECT 1 FROM pages WHERE slug = ? AND company_id = ?', args: [slug, base] })
+      if (basePage.rows.length === 0) {
+        return res.status(404).json({ error: 'Page not found' })
+      }
+    } else if (pageExists.rows.length === 0) {
       return res.status(404).json({ error: 'Page not found' })
     }
     const result = await req.db.execute({
       sql: `SELECT key, value FROM content WHERE company_id = ?
             UNION ALL
             SELECT key, value FROM page_content WHERE page_slug = ? AND company_id = ?`,
-      args: [company_id, slug, company_id],
+      args: [effective, slug, effective],
     })
     const content = {}
     for (const row of result.rows) {
       content[row.key] = row.value
+    }
+    // Fallback por-chave: o que a página da organização não tiver vem do
+    // template da 'default' (content global + page_content da página).
+    if (base && base !== effective) {
+      const baseResult = await req.db.execute({
+        sql: `SELECT key, value FROM content WHERE company_id = ?
+              UNION ALL
+              SELECT key, value FROM page_content WHERE page_slug = ? AND company_id = ?`,
+        args: [base, slug, base],
+      })
+      for (const row of baseResult.rows) {
+        if (content[row.key] === undefined) content[row.key] = row.value
+      }
     }
     res.json(content)
   } catch (err) {

@@ -16,9 +16,10 @@ interface User {
 
 interface UserManagerProps {
   currentUsername?: string
+  activeCompanyId?: string | null
 }
 
-export default function UserManager({ currentUsername = '' }: UserManagerProps) {
+export default function UserManager({ currentUsername = '', activeCompanyId = null }: UserManagerProps) {
   const [users, setUsers] = useState<User[]>(() => getCachedUsersSync() || [])
   const [professores, setProfessores] = useState<{ id: string; nome: string }[]>([])
   const [newUsername, setNewUsername] = useState('')
@@ -158,6 +159,11 @@ export default function UserManager({ currentUsername = '' }: UserManagerProps) 
   return (
     <div className="admin-users">
       <h2>{canManageAll ? 'Gerenciar Usuários (Turso)' : 'Meu Usuário'}</h2>
+      {activeCompanyId && (
+        <p className="admin-hint" style={{ margin: '4px 0 16px', fontSize: '0.85rem' }}>
+          🏢 Novos usuários serão criados na organização <strong>{activeCompanyId}</strong>.
+        </p>
+      )}
 
       {canManageAll && (
         <div className="admin-row" style={{ alignItems: 'flex-end', marginBottom: 24, gap: 12, flexWrap: 'wrap' }}>
