@@ -3,7 +3,7 @@ import api from '../cms/api'
 import { AdminLogin, AdminDashboard, SectionEditor, PageManager, ImageLibrary, StyleEditor, BackupRestore, UserManager, HistoricoAlunos, HistoricoEditor, SupabaseUserManager, TurmasManager, ProfessoresManager, DisciplinasManager, MatriculasManager, NotasManager, FrequenciaManager, DiarioClasseManager, OcorrenciasManager, ConselhoClasseManager, AnosLetivosManager, GradeHorariaManager, OrganizationsManager } from './index'
 import AdminLoginSupabase from './AdminLoginSupabase'
 import { getRoleFromToken, getUsernameFromToken, ROLES } from '../cms/auth'
-import { fetchAdminPreload, fetchLoginLog, deleteLoginLog } from '../cms/api'
+import { fetchAdminPreload, fetchLoginLog, deleteLoginLog, fetchOrganizations, type Organization } from '../cms/api'
 import { seedCache, getCachedMessagesSync, getCachedPreEnrollmentsSync, invalidateCache, invalidateAllCache } from '../cms/contentCache'
 import ChangePasswordModal from './ChangePasswordModal'
 
@@ -53,6 +53,12 @@ export default function AdminApp() {
   })
   const [isDesktop, setIsDesktop] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 769px)').matches)
 
+  // Modal de seleção de organização (super_admin com mais de uma escola)
+  const [orgPickerList, setOrgPickerList] = useState<Organization[] | null>(null)
+  const [orgPickerDismissed, setOrgPickerDismissed] = useState(false)
+  // Nome da organização ativa (exibido no chip da sidebar e no banner)
+  const [activeOrgName, setActiveOrgName] = useState('')
+
   const hydratePreload = (data: any) => {
     if (data.content) seedCache('global_content', data.content)
     if (data.pages) seedCache('pages', data.pages)
@@ -72,6 +78,18 @@ export default function AdminApp() {
       fetchAdminPreload().then(hydratePreload).catch(() => { })
     }
   }, [token, companyId])
+
+  // Super_admin sem organização selecionada e com mais de uma escola no banco:
+  // abre o modal para escolher em qual organização trabalhar.
+  useEffect(() => {
+    if (!token || role !== ROLES.SUPER_ADMIN || companyId || orgPickerDismissed) {
+      setOrgPickerList(null)
+      return
+    }
+    fetchOrganizations()
+      .then((orgs) => { if (Array.isArray(orgs) && orgs.length > 1) setOrgPickerList(orgs) })
+      .catch(() => { })
+  }, [token, role, companyId, orgPickerDismissed])
 
   useEffect(() => {
     const g = VIEW_GROUP[view]
@@ -95,6 +113,7 @@ export default function AdminApp() {
     setRole(getRoleFromToken())
     setMustChangePassword(!!needChangePassword)
     setView('dashboard')
+    setOrgPickerDismissed(false)
   }
 
   const handlePasswordChanged = (newToken: string) => {
@@ -131,6 +150,16 @@ export default function AdminApp() {
     invalidateAllCache()
     setView('dashboard')
   }
+
+  // Nome da organização ativa (o header X-Company-Id já vai no interceptor)
+  useEffect(() => {
+    if (!companyId) { setActiveOrgName(''); return }
+    let cancelled = false
+    api.get('/public/theme')
+      .then(({ data }) => { if (!cancelled) setActiveOrgName(data?.nome || companyId) })
+      .catch(() => { if (!cancelled) setActiveOrgName(companyId) })
+    return () => { cancelled = true }
+  }, [companyId])
 
   const handleNavigate = (v: string, section?: string, alunoId?: string) => {
     if (v === 'section' && section) {
@@ -325,6 +354,7 @@ export default function AdminApp() {
     unreadPreEnrollments,
     role,
     activeCompanyId: companyId,
+    activeCompanyName: activeOrgName,
     onEnterCompany: handleEnterCompany,
     onLeaveCompany: handleLeaveCompany,
   }
@@ -354,7 +384,7 @@ export default function AdminApp() {
       case 'images':
         return <ImageLibrary />
       case 'users':
-        return <UserManager currentUsername={getUsernameFromToken() || ''} />
+        return <UserManager currentUsername={getUsernameFromToken() || ''} activeCompanyId={companyId} />
       case 'supabase_users':
         return <SupabaseUserManager />
       case 'backups':
@@ -407,8 +437,31 @@ export default function AdminApp() {
         >
           {collapsed && isDesktop ? '»' : '«'}
         </button>
+        {collapsed && isDesktop ? null : (
+          <>
+            {companyId && (
+              <div className="admin-org-chip">
+                <span className="admin-org-chip-label" title={companyId}>
+                  🏢 {activeOrgName || companyId}
+                </span>
+                <button type="button" className="btn btn-sm btn-outline" onClick={handleLeaveCompany}>Sair</button>
+              </div>
+            )}
+          </>
+        )}
         {collapsed && isDesktop ? (
           <nav>
+            {companyId && (
+              <button
+                type="button"
+                className="sidebar-rail-btn org-active-rail"
+                title={`Sair da organização: ${activeOrgName || companyId}`}
+                aria-label={`Sair da organização: ${activeOrgName || companyId}`}
+                onClick={handleLeaveCompany}
+              >
+                <span className="sidebar-btn-icon">🏢<span className="sidebar-badge org-dot" /></span>
+              </button>
+            )}
             {isSuperAdmin ? (
               <button type="button" className={`sidebar-rail-btn${view === 'organizations' ? ' active' : ''}`} title="Organizações" aria-label="Organizações" onClick={() => setView('organizations')}>🏢</button>
             ) : null}
@@ -549,6 +602,39 @@ export default function AdminApp() {
           onSuccess={handlePasswordChanged}
           onLogout={handleLogout}
         />
+      )}
+
+      {orgPickerList && (
+        <div className="admin-modal-overlay" onClick={() => { setOrgPickerList(null); setOrgPickerDismissed(true) }}>
+          <div className="admin-message-modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 480 }}>
+            <button className="admin-modal-close" onClick={() => { setOrgPickerList(null); setOrgPickerDismissed(true) }}>&times;</button>
+            <h3>Selecionar Organização</h3>
+            <p style={{ margin: '4px 0 12px', fontSize: '0.85rem', color: 'var(--text-light)' }}>
+              Há mais de uma organização no sistema. Escolha uma para trabalhar — o painel carregará todos e somente os dados dela.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {orgPickerList.map((o) => (
+                <button
+                  key={o.id}
+                  type="button"
+                  className="org-picker-item"
+                  onClick={() => { setOrgPickerList(null); handleEnterCompany(o.id) }}
+                >
+                  <strong>{o.nome}</strong>
+                  <span>{o.id}</span>
+                </button>
+              ))}
+              <button
+                type="button"
+                className="btn btn-outline"
+                style={{ marginTop: 8 }}
+                onClick={() => { setOrgPickerList(null); setOrgPickerDismissed(true) }}
+              >
+                Continuar sem selecionar (organização padrão)
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

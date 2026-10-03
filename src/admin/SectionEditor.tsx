@@ -1,6 +1,6 @@
 import { useState, useEffect, Suspense } from 'react'
 import { bulkUpdateContent, updatePageContent } from '../cms/api'
-import { fetchPagesCached, fetchContentCached, fetchPageContentCached, invalidateCache } from '../cms/contentCache'
+import { fetchPagesCachedAdmin, fetchContentCachedAdmin, fetchPageContentCachedAdmin, invalidateCache } from '../cms/contentCache'
 import { getModularSection } from '../cms/registry'
 import { AdminProps } from '../cms/types'
 import ImagePickerModal from './ImagePickerModal'
@@ -23,13 +23,13 @@ export default function SectionEditor({ sectionTitle, onBack }: SectionEditorPro
   const [imagePickerField, setImagePickerField] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchPagesCached().then(({ data }) => setPages(data)).catch(() => {})
+    fetchPagesCachedAdmin().then(({ data }) => setPages(data)).catch(() => {})
   }, [])
 
   useEffect(() => {
     const load = selectedPage
-      ? fetchPageContentCached(selectedPage).then(r => r.data)
-      : fetchContentCached().then(r => r.data)
+      ? fetchPageContentCachedAdmin(selectedPage).then(r => r.data)
+      : fetchContentCachedAdmin().then(r => r.data)
     load.then((data) => {
       const merged = { ...data }
       if (mod) {

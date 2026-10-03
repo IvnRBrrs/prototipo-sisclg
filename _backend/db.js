@@ -794,6 +794,57 @@ export async function initDb(db) {
     console.error('[db.js] Migration V15 FAILED:', e.message)
   }
 
+  // V16 migration: coluna espelho `company_id` em organizations, sempre igual
+  // ao `id` da organização (que continua sendo a chave de tenant usada por
+  // todas as outras tabelas). A coluna pode já existir (criada manualmente) —
+  // a migração é tolerante e apenas garante que exista e esteja populada.
+  try {
+    const v16Check = await db.execute(`SELECT value FROM content WHERE key = '_migration_v16'`)
+    if (v16Check.rows.length === 0) {
+      const orgInfo = await db.execute('PRAGMA table_info(organizations)')
+      const orgCols = orgInfo.rows.map((r) => r.name)
+      if (!orgCols.includes('company_id')) {
+        await db.execute(`ALTER TABLE organizations ADD COLUMN company_id TEXT`)
+        console.log('[db.js] organizations.company_id column added')
+      }
+      await db.execute(`UPDATE organizations SET company_id = id WHERE company_id IS NULL OR company_id = ''`)
+      console.log('[db.js] organizations.company_id backfilled (= id)')
+      await db.execute(`INSERT OR IGNORE INTO content (key, value) VALUES ('_migration_v16', '1')`)
+      console.log('[db.js] Migration V16 complete (organizations.company_id espelho de id)')
+    }
+  } catch (e) {
+    console.error('[db.js] Migration V16 FAILED:', e.message)
+  }
+
+  // V17 migration: Pin de tenant por organização — amarra um deploy (Vercel:
+  // TENANT_PINNED_ORG no backend + VITE_TENANT_ORG_ID no frontend, mesmo pin)
+  // a UMA escola. O site do deploy passa a servir única e exclusivamente a
+  // organização dona do pin, independente de domínio/host.
+  try {
+    const v17Check = await db.execute(`SELECT value FROM content WHERE key = '_migration_v17'`)
+    if (v17Check.rows.length === 0) {
+      const orgInfo = await db.execute('PRAGMA table_info(organizations)')
+      const orgCols = orgInfo.rows.map((r) => r.name)
+      if (!orgCols.includes('tenant_pin')) {
+        await db.execute(`ALTER TABLE organizations ADD COLUMN tenant_pin TEXT`)
+        console.log('[db.js] organizations.tenant_pin column added')
+      }
+      // Backfill: toda organização existente ganha um pin (não fica órfã de pin)
+      const semPin = await db.execute("SELECT id FROM organizations WHERE tenant_pin IS NULL OR tenant_pin = ''")
+      for (const row of semPin.rows) {
+        await db.execute({
+          sql: 'UPDATE organizations SET tenant_pin = ? WHERE id = ?',
+          args: [crypto.randomUUID().replace(/-/g, ''), row.id],
+        })
+      }
+      console.log('[db.js] tenant_pin backfilled para', semPin.rows.length, 'organização(ões)')
+      await db.execute(`INSERT OR IGNORE INTO content (key, value) VALUES ('_migration_v17', '1')`)
+      console.log('[db.js] Migration V17 complete (tenant_pin)')
+    }
+  } catch (e) {
+    console.error('[db.js] Migration V17 FAILED:', e.message)
+  }
+
   // Seed alunos fictícios (runs once regardless of migration status)
   try {
     const seedCheck = await db.execute(`SELECT value FROM content WHERE key = '_seed_alunos_version'`)

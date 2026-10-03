@@ -3,6 +3,7 @@ import { authMiddleware, requireRole } from '../middleware/auth.js'
 import { ROLES } from '../roles.js'
 import { rowsToObjects } from '../rows.js'
 import crypto from 'crypto'
+import { resolveSiteCompany } from '../siteSource.js'
 
 const router = Router()
 
@@ -12,6 +13,9 @@ function slugify(text) {
 
 router.get('/posts', async (req, res) => {
   try {
+    // Blog é sempre da própria organização (substituição do site principal
+    // aplica-se; sem merge com o template — posts são conteúdo editorial).
+    const { effective } = await resolveSiteCompany(req)
     const page = Math.max(1, parseInt(req.query.page) || 1)
     const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10))
     const offset = (page - 1) * limit
@@ -22,7 +26,7 @@ router.get('/posts', async (req, res) => {
     const month = req.query.month || ''
 
     let where = 'WHERE company_id = ?'
-    const args = [req.company_id || 'default']
+    const args = [effective]
 
     if (search) {
       where += ' AND (title LIKE ? OR subtitle LIKE ? OR author LIKE ? OR content LIKE ?)'
@@ -72,9 +76,10 @@ router.get('/posts', async (req, res) => {
 
 router.get('/posts/:id', async (req, res) => {
   try {
+    const { effective } = await resolveSiteCompany(req)
     const result = await req.db.execute({
       sql: 'SELECT * FROM blog_posts WHERE (id = ? OR slug = ?) AND company_id = ?',
-      args: [req.params.id, req.params.id, req.company_id || 'default'],
+      args: [req.params.id, req.params.id, effective],
     })
     if (result.rows.length === 0) return res.status(404).json({ error: 'Post not found' })
     res.json(rowsToObjects(result.rows, result.columns)[0])
@@ -196,9 +201,10 @@ router.delete('/posts/:id', authMiddleware, requireRole(ROLES.SUPER_ADMIN, ROLES
 
 router.get('/tags', async (req, res) => {
   try {
+    const { effective } = await resolveSiteCompany(req)
     const result = await req.db.execute({
       sql: "SELECT tags FROM blog_posts WHERE tags != '[]' AND company_id = ?",
-      args: [req.company_id || 'default'],
+      args: [effective],
     })
     const tagSet = new Set()
     result.rows.forEach((row) => {
@@ -215,9 +221,10 @@ router.get('/tags', async (req, res) => {
 
 router.get('/authors', async (req, res) => {
   try {
+    const { effective } = await resolveSiteCompany(req)
     const result = await req.db.execute({
       sql: "SELECT DISTINCT author FROM blog_posts WHERE author != '' AND company_id = ? ORDER BY author",
-      args: [req.company_id || 'default'],
+      args: [effective],
     })
     res.json(result.rows.map((r) => r.author))
   } catch (err) {
@@ -228,12 +235,13 @@ router.get('/authors', async (req, res) => {
 
 router.get('/archive', async (req, res) => {
   try {
+    const { effective } = await resolveSiteCompany(req)
     const result = await req.db.execute({
       sql: `
         SELECT strftime('%Y', date) as year, strftime('%m', date) as month, COUNT(*) as count
         FROM blog_posts WHERE company_id = ? GROUP BY year, month ORDER BY year DESC, month DESC
       `,
-      args: [req.company_id || 'default'],
+      args: [effective],
     })
     res.json(rowsToObjects(result.rows, result.columns))
   } catch (err) {

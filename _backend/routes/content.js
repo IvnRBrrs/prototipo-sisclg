@@ -1,13 +1,15 @@
 import { Router } from 'express'
 import { authMiddleware, requireRole } from '../middleware/auth.js'
 import { ROLES } from '../roles.js'
+import { resolveSiteCompany } from '../siteSource.js'
 
 const router = Router()
 
 const _pending = new Map()
 
 router.get('/', async (req, res) => {
-  const cacheKey = 'content_all_' + (req.company_id || 'default')
+  const { effective, base } = await resolveSiteCompany(req)
+  const cacheKey = 'content_all_' + effective + (base ? '_over_' + base : '')
   if (_pending.has(cacheKey)) {
     const data = await _pending.get(cacheKey)
     return res.json(data)
@@ -15,12 +17,23 @@ router.get('/', async (req, res) => {
   const promise = (async () => {
     const result = await req.db.execute({
       sql: 'SELECT * FROM content WHERE company_id = ? ORDER BY key',
-      args: [req.company_id || 'default'],
+      args: [effective],
     })
     const data = {}
     result.rows.forEach((row) => {
       data[row.key] = row.value
     })
+    // Fallback por-chave: componentes sem valor na organização usam o
+    // template da 'default' (somente leitura do site público).
+    if (base && base !== effective) {
+      const baseResult = await req.db.execute({
+        sql: 'SELECT * FROM content WHERE company_id = ? ORDER BY key',
+        args: [base],
+      })
+      baseResult.rows.forEach((row) => {
+        if (data[row.key] === undefined) data[row.key] = row.value
+      })
+    }
     return data
   })()
   _pending.set(cacheKey, promise)

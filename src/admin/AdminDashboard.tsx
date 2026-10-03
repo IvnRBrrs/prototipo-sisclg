@@ -8,6 +8,7 @@ interface AdminDashboardProps {
   unreadPreEnrollments: number
   role: string | null
   activeCompanyId?: string | null
+  activeCompanyName?: string | null
   onEnterCompany: (companyId: string) => void
   onLeaveCompany: () => void
 }
@@ -20,7 +21,7 @@ interface DashItem {
   badge?: number
 }
 
-export default function AdminDashboard({ onNavigate, unreadMessages, unreadPreEnrollments, role, activeCompanyId = null, onEnterCompany, onLeaveCompany }: AdminDashboardProps) {
+export default function AdminDashboard({ onNavigate, unreadMessages, unreadPreEnrollments, role, activeCompanyId = null, activeCompanyName = null, onEnterCompany, onLeaveCompany }: AdminDashboardProps) {
   const [openGroup, setOpenGroup] = useState('conteudo')
 
   const sectionTitles = getAllSectionTitles()
@@ -126,7 +127,7 @@ export default function AdminDashboard({ onNavigate, unreadMessages, unreadPreEn
       {activeCompanyId && (
         <div className="admin-org-banner">
           <span>
-            🏢 Organização ativa: <strong>{activeCompanyId}</strong> — o painel abaixo está operando nos dados desta organização.
+            🏢 Organização ativa: <strong>{activeCompanyName || activeCompanyId}</strong> — o painel abaixo está operando nos dados desta organização.
           </span>
           <button className="btn btn-sm btn-outline" onClick={onLeaveCompany}>Sair da organização</button>
         </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, Suspense } from 'react'
-import { fetchPagesCached, invalidateCache, getCachedPagesSync } from '../cms/contentCache'
+import { fetchPagesCachedAdmin, invalidateCache, getCachedPagesSyncAdmin } from '../cms/contentCache'
 import api from '../cms/api'
 import { getModularSection, getAllSectionTitles } from '../cms/registry'
 import { AdminProps } from '../cms/types'
@@ -14,8 +14,8 @@ interface Page {
 }
 
 export default function PageManager() {
-  const [pages, setPages] = useState<Page[]>(() => getCachedPagesSync() || [])
-  const [loading, setLoading] = useState(() => !getCachedPagesSync())
+  const [pages, setPages] = useState<Page[]>(() => getCachedPagesSyncAdmin() || [])
+  const [loading, setLoading] = useState(() => !getCachedPagesSyncAdmin())
   const [editingSlug, setEditingSlug] = useState<string | null>(null)
   const [newTitle, setNewTitle] = useState('')
   const [newSlug, setNewSlug] = useState('')
@@ -24,7 +24,7 @@ export default function PageManager() {
 
   const loadPages = async () => {
     try {
-      const { data } = await fetchPagesCached()
+      const { data } = await fetchPagesCachedAdmin()
       setPages(Array.isArray(data) ? data : [])
     } catch {} finally { setLoading(false) }
   }
@@ -131,7 +131,7 @@ function PageEditor({ slug, onBack, onSaved }: { slug: string; onBack: () => voi
   const allSectionTitles = getAllSectionTitles()
 
   useEffect(() => {
-    api.get(`/pages/${slug.replace(/^\/+|\/+$/g, '')}/content`).then(({ data }) => {
+    api.get(`/pages/${slug.replace(/^\/+|\/+$/g, '')}/content`, { headers: { 'X-Cms-Ctx': 'admin' } }).then(({ data }) => {
       setPageContent(data)
       try {
         if (data._sections) {

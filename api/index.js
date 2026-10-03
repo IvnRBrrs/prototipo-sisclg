@@ -29,6 +29,7 @@ import horariosRoutes from '../_backend/routes/horarios.js'
 import adminRoutes from '../_backend/routes/admin.js'
 import publicRoutes from '../_backend/routes/public.js'
 import organizationsRoutes from '../_backend/routes/organizations.js'
+import keepaliveRoutes from '../_backend/routes/keepalive.js'
 
 console.log('[api/index.js] Starting module load...')
 console.log('[api/index.js] DATABASE_URL present:', !!process.env.DATABASE_URL)
@@ -102,6 +103,7 @@ app.use('/api/horarios', horariosRoutes)
 app.use('/api/admin', adminRoutes)
 app.use('/api/public', publicRoutes)
 app.use('/api/organizations', organizationsRoutes)
+app.use('/api/keep-alive', keepaliveRoutes)
 
 // 404 JSON para rotas /api não registradas (compatível com Vercel; no dev,
 // sem isto o fallback SPA do Vite responderia index.html para /api/*).

@@ -17,6 +17,12 @@ api.interceptors.request.use((config) => {
   if (companyId) {
     config.headers['X-Company-Id'] = companyId
   }
+  // Pin de tenant do deploy (VITE_TENANT_ORG_ID na Vercel): amarra este
+  // frontend à organização dona do pin — o backend valida e resolve.
+  const tenantPin = import.meta.env.VITE_TENANT_ORG_ID
+  if (tenantPin) {
+    config.headers['X-Tenant-Pin'] = tenantPin
+  }
   return config
 })
 
@@ -35,8 +41,17 @@ api.interceptors.response.use(
 export default api
 
 // Content helpers
+const ADMIN_CTX = { headers: { 'X-Cms-Ctx': 'admin' } } as const
+
 export async function fetchContent(): Promise<Record<string, string>> {
   const { data } = await api.get('/content')
+  return data
+}
+
+// Variantes do PAINEL: pedem a própria organização sem a substituição do
+// "site principal" (o editor sempre edita o que exibe).
+export async function fetchContentAdmin(): Promise<Record<string, string>> {
+  const { data } = await api.get('/content', ADMIN_CTX)
   return data
 }
 
@@ -54,11 +69,25 @@ export async function fetchPages() {
   return data
 }
 
+export async function fetchPagesAdmin() {
+  const { data } = await api.get('/pages', ADMIN_CTX)
+  return data
+}
+
 function normSlug(s: string) { return s.replace(/^\/+|\/+$/g, '') }
 
 export async function fetchPageContent(slug: string): Promise<Record<string, string>> {
   try {
     const { data } = await api.get(`/pages/${normSlug(slug)}/content`)
+    return data
+  } catch (err) {
+    throw err
+  }
+}
+
+export async function fetchPageContentAdmin(slug: string): Promise<Record<string, string>> {
+  try {
+    const { data } = await api.get(`/pages/${normSlug(slug)}/content`, ADMIN_CTX)
     return data
   } catch (err) {
     throw err
@@ -125,8 +154,21 @@ export async function fetchBlogPosts(params: Record<string, string | number> = {
   return data
 }
 
+// Variante do PAINEL (sem substituição do site principal)
+export async function fetchBlogPostsAdmin(params: Record<string, string | number> = {}) {
+  const query = new URLSearchParams()
+  Object.entries(params).forEach(([k, v]) => { if (v) query.set(k, String(v)) })
+  const { data } = await api.get(`/blog/posts?${query}`, ADMIN_CTX)
+  return data
+}
+
 export async function fetchBlogPost(id: string) {
   const { data } = await api.get(`/blog/posts/${id}`)
+  return data
+}
+
+export async function fetchBlogPostAdmin(id: string) {
+  const { data } = await api.get(`/blog/posts/${id}`, ADMIN_CTX)
   return data
 }
 
@@ -197,6 +239,7 @@ export interface Organization {
   status: string
   created_at: string
   provisioned?: number
+  tenant_pin?: string
 }
 
 export async function fetchOrganizations() {
@@ -217,4 +260,17 @@ export async function updateOrganization(companyId: string, payload: { nome?: st
 export async function runOnboarding(companyId: string, payload: { admin_username?: string; admin_password?: string }) {
   const { data } = await api.post(`/organizations/${encodeURIComponent(companyId)}/onboarding`, payload)
   return data
+}
+
+// "Site principal": publica (ativa=true) ou desativa a exibição do conteúdo
+// da organização no site principal (domínio que resolve para 'default').
+export async function setSitePrincipal(orgId: string | null, ativo: boolean) {
+  const { data } = await api.put('/organizations/site-principal', { org_id: orgId, ativo })
+  return data as { success: boolean; site_principal: { org_id: string; ativo: boolean } | null }
+}
+
+// Regenera o pin de tenant da organização (invalida o pin antigo).
+export async function regenerateTenantPin(companyId: string) {
+  const { data } = await api.post(`/organizations/${encodeURIComponent(companyId)}/regenerate-pin`)
+  return data as { success: boolean; tenant_pin: string }
 }

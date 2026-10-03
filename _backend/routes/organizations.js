@@ -10,6 +10,7 @@ import { ROLES } from '../roles.js'
 import { rowsToObjects } from '../rows.js'
 import supabaseAdmin from '../supabaseAdmin.js'
 import { invalidateTenantCache } from '../middleware/tenant.js'
+import { DUMMY_TEMPLATE } from '../dummySiteTemplate.js'
 
 const router = Router()
 
@@ -34,6 +35,23 @@ function serializeOrgs(rows, columns) {
     domains: parseJSON(o.domains, []),
     settings: parseJSON(o.settings, {}),
   }))
+}
+
+// Insert multi-linha em chunks: poucos round-trips ao Turso (o batch nativo do
+// client serverless não vincula args nesta versão) mantendo parâmetros
+// seguramente vinculados. Chunk de 150 rows × N colunas fica sob o limite de
+// 999 variáveis por statement do SQLite.
+async function insertChunked(db, table, columns, rows, chunkSize = 150) {
+  let count = 0
+  for (let i = 0; i < rows.length; i += chunkSize) {
+    const chunk = rows.slice(i, i + chunkSize)
+    const placeholders = chunk.map(() => `(${columns.map(() => '?').join(', ')})`).join(', ')
+    const args = []
+    for (const r of chunk) for (const c of columns) args.push(r[c])
+    await db.execute({ sql: `INSERT INTO ${table} (${columns.join(', ')}) VALUES ${placeholders}`, args })
+    count += chunk.length
+  }
+  return count
 }
 
 router.use(authMiddleware, requireRole(ROLES.SUPER_ADMIN))
@@ -68,12 +86,85 @@ router.post('/', async (req, res) => {
     const domainList = Array.isArray(domains)
       ? domains.map((d) => String(d).trim().toLowerCase()).filter(Boolean)
       : []
+    // Pin de tenant: amarra o deploy de Vercel (TENANT_PINNED_ORG +
+    // VITE_TENANT_ORG_ID) a ESTA organização de forma absoluta.
+    const tenantPin = crypto.randomUUID().replace(/-/g, '')
     await req.db.execute({
-      sql: 'INSERT INTO organizations (id, nome, slug, domains, settings, status) VALUES (?, ?, ?, ?, ?, ?)',
-      args: [normSlug, String(nome).trim(), normSlug, JSON.stringify(domainList), JSON.stringify(settings || {}), 'active'],
+      sql: 'INSERT INTO organizations (id, nome, slug, domains, settings, status, company_id, tenant_pin) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      args: [normSlug, String(nome).trim(), normSlug, JSON.stringify(domainList), JSON.stringify(settings || {}), 'active', normSlug, tenantPin],
     })
     invalidateTenantCache()
-    res.json({ success: true, id: normSlug })
+    res.json({ success: true, id: normSlug, tenant_pin: tenantPin })
+  } catch (err) {
+    console.error(`[api 500] ${res.req.method} ${res.req.originalUrl}`, err)
+    res.status(500).json({ error: String(err) })
+  }
+})
+
+// "Site principal" (hidden feature): publica o conteúdo de uma organização no
+// site principal (o domínio que resolve para 'default'). Switch e botão
+// Publicar do painel chamam esta rota. Escopo: SOMENTE dados do site público
+// (content/pages/page_content + blog via substituição) — mensagens, usuários e
+// demais dados continuam isolados por organização.
+router.put('/site-principal', async (req, res) => {
+  try {
+    const { org_id, ativo } = req.body
+    if (ativo !== true && ativo !== false) {
+      return res.status(400).json({ error: 'ativo must be true or false' })
+    }
+
+    let principal = null
+    if (ativo === true && org_id && String(org_id) !== 'default') {
+      const exists = await req.db.execute({
+        sql: 'SELECT id FROM organizations WHERE id = ?',
+        args: [String(org_id)],
+      })
+      if (exists.rows.length === 0) return res.status(404).json({ error: 'Organization not found' })
+      principal = { org_id: String(org_id), ativo: true, atualizado_em: new Date().toISOString() }
+    }
+
+    const current = await req.db.execute({
+      sql: "SELECT settings FROM organizations WHERE id = 'default'",
+    })
+    if (current.rows.length === 0) return res.status(404).json({ error: 'Default organization not found' })
+    let settings = {}
+    try { settings = JSON.parse(current.rows[0].settings || '{}') } catch {}
+    if (principal) {
+      settings.site_principal = principal
+    } else {
+      delete settings.site_principal
+    }
+    await req.db.execute({
+      sql: "UPDATE organizations SET settings = ? WHERE id = 'default'",
+      args: [JSON.stringify(settings)],
+    })
+    invalidateTenantCache()
+    res.json({ success: true, site_principal: principal })
+  } catch (err) {
+    console.error(`[api 500] ${res.req.method} ${res.req.originalUrl}`, err)
+    res.status(500).json({ error: String(err) })
+  }
+})
+
+// Regenera o pin de tenant da organização. ATENÇÃO: invalida imediatamente
+// o pin antigo — deploys (Vercel) configurados com o pin anterior deixam de
+// servir a organização até atualizarem TENANT_PINNED_ORG/VITE_TENANT_ORG_ID.
+router.post('/:id/regenerate-pin', async (req, res) => {
+  try {
+    const orgId = req.params.id
+    const exists = await req.db.execute({
+      sql: 'SELECT id FROM organizations WHERE id = ?',
+      args: [orgId],
+    })
+    if (exists.rows.length === 0) return res.status(404).json({ error: 'Organization not found' })
+
+    const novoPin = crypto.randomUUID().replace(/-/g, '')
+    await req.db.execute({
+      sql: 'UPDATE organizations SET tenant_pin = ? WHERE id = ?',
+      args: [novoPin, orgId],
+    })
+    invalidateTenantCache()
+    res.json({ success: true, id: orgId, tenant_pin: novoPin })
   } catch (err) {
     console.error(`[api 500] ${res.req.method} ${res.req.originalUrl}`, err)
     res.status(500).json({ error: String(err) })
@@ -106,10 +197,11 @@ router.put('/:id', async (req, res) => {
   }
 })
 
-// Onboarding: copia o template da 'default' (páginas, conteúdo, imagens e
-// posts do blog — todos com ids novos, pois id é chave global) para a nova
-// escola e cria o admin (Turso + Supabase). Tudo ou nada no Turso (transação);
-// o Supabase é best-effort e reportado na resposta.
+// Onboarding: popula a nova organização com o template DUMMY
+// (_backend/dummySiteTemplate.js — estrutura da default, valores de exemplo,
+// NENHUM dado real/sensível importado) e cria o admin da escola
+// (gestor_admin no Turso + Supabase best-effort). Tudo ou nada no Turso
+// (transação); o Supabase é reportado na resposta.
 router.post('/:id/onboarding', async (req, res) => {
   try {
     const orgId = req.params.id
@@ -141,113 +233,119 @@ router.post('/:id/onboarding', async (req, res) => {
     const password = admin_password || crypto.randomBytes(6).toString('hex')
     const email = `${username}@${orgId}.com.br`
 
-    await req.db.execute('BEGIN')
-    try {
-      const existing = await req.db.execute({
-        sql: 'SELECT id FROM users WHERE username = ?',
-        args: [username],
-      })
-      if (existing.rows.length > 0) {
-        await req.db.execute('ROLLBACK')
+    // Username do admin: se já existir, só é aceito se for o gestor_admin DA
+    // PRÓPRIA organização (re-provisionamento após reset de dados — a conta
+    // da escola é preservada, sem nova senha). De outra org → erro.
+    const existing = await req.db.execute({
+      sql: 'SELECT company_id, role FROM users WHERE username = ?',
+      args: [username],
+    })
+    let adminExisting = false
+    if (existing.rows.length > 0) {
+      const row = existing.rows[0]
+      if (String(row.company_id) !== orgId || String(row.role) !== ROLES.GESTOR_ADMIN) {
         return res.status(400).json({ error: 'Admin username already exists' })
       }
-
-      const pagesRes = await req.db.execute({
-        sql: `INSERT INTO pages (slug, title, show_in_menu, parent_slug, menu_order, created_at, company_id)
-              SELECT slug, title, show_in_menu, parent_slug, menu_order, created_at, ? FROM pages WHERE company_id = 'default'`,
-        args: [orgId],
-      })
-      const pageContentRes = await req.db.execute({
-        sql: `INSERT INTO page_content (page_slug, key, value, company_id)
-              SELECT page_slug, key, value, ? FROM page_content WHERE company_id = 'default'`,
-        args: [orgId],
-      })
-      const contentRes = await req.db.execute({
-        sql: `INSERT INTO content (key, value, updated_at, company_id)
-              SELECT key, value, updated_at, ? FROM content WHERE company_id = 'default'`,
-        args: [orgId],
-      })
-
-      // Imagens: ids NOVOS (a PK de images é o id, global). O conteúdo do site
-      // embute as imagens como base64 nos valores, então nada é referenciado
-      // por id — a biblioteca do CMS da nova escola fica independente.
-      const srcImages = await req.db.execute({
-        sql: 'SELECT filename, data, type, component_type, thumbnail, created_at FROM images WHERE company_id = ?',
-        args: ['default'],
-      })
-      let imagesCopied = 0
-      for (const row of srcImages.rows) {
-        await req.db.execute({
-          sql: 'INSERT INTO images (id, filename, data, type, component_type, thumbnail, created_at, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          args: [crypto.randomUUID(), row.filename, row.data, row.type, row.component_type, row.thumbnail, row.created_at, orgId],
-        })
-        imagesCopied++
-      }
-
-      // Posts do blog: ids NOVOS (mesmo motivo). As imagens do post são
-      // objetos {url} auto-contidos (base64), sem vínculo por id.
-      const srcBlog = await req.db.execute({
-        sql: 'SELECT title, subtitle, content, author, date, tags, images, videos, slug, published, created_at FROM blog_posts WHERE company_id = ?',
-        args: ['default'],
-      })
-      let blogCopied = 0
-      for (const row of srcBlog.rows) {
-        await req.db.execute({
-          sql: 'INSERT INTO blog_posts (id, title, subtitle, content, author, date, tags, images, videos, slug, published, created_at, company_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          args: [crypto.randomUUID(), row.title, row.subtitle, row.content, row.author, row.date, row.tags, row.images, row.videos, row.slug, row.published, row.created_at, orgId],
-        })
-        blogCopied++
-      }
-
-      const hash = await bcrypt.hash(password, 10)
-      await req.db.execute({
-        sql: 'INSERT INTO users (username, password_hash, role, email, company_id, must_change_password) VALUES (?, ?, ?, ?, ?, 1)',
-        args: [username, hash, ROLES.EDITOR_ADMIN, email, orgId],
-      })
-
-      await req.db.execute('COMMIT')
-
-      // Supabase: best-effort, fora da transação — falha aqui NÃO desfaz o
-      // Turso, mas é reportada na resposta para o usuário saber.
-      let supabaseOk = false
-      let supabaseError = ''
-      if (supabaseAdmin) {
-        try {
-          await supabaseAdmin.auth.admin.createUser({
-            email,
-            password,
-            email_confirm: true,
-            user_metadata: { role: ROLES.EDITOR_ADMIN, company_id: orgId },
-          })
-          supabaseOk = true
-          console.log('[organizations] Supabase user created for', orgId)
-        } catch (e) {
-          supabaseError = e.message || 'Unknown error'
-          console.error('[organizations] Supabase user creation failed:', e.message)
-        }
-      } else {
-        supabaseError = 'Supabase not configured'
-      }
-
-      res.json({
-        success: true,
-        username,
-        password,
-        email,
-        supabase: { ok: supabaseOk, error: supabaseError },
-        copied: {
-          pages: pagesRes.rowsAffected,
-          page_content: pageContentRes.rowsAffected,
-          content: contentRes.rowsAffected,
-          images: imagesCopied,
-          blog_posts: blogCopied,
-        },
-      })
-    } catch (err) {
-      await req.db.execute('ROLLBACK').catch(() => {})
-      console.error(`[api 500] ${res.req.method} ${res.req.originalUrl}`, err)
-      res.status(500).json({ error: String(err) })
+      adminExisting = true
     }
+
+    const hash = await bcrypt.hash(password, 10)
+    // Admin da escola nasce como gestor_admin: gerencia usuários e dados da
+    // PRÓPRIA escola (inclusive criando os demais usuários), sem poder
+    // acessar outras organizações (isso é exclusivo do super_admin).
+    const adminRole = ROLES.GESTOR_ADMIN
+
+    // Transação com inserts multi-linha em chunks: dummy template inteiro +
+    // gestor_admin em ~10 round-trips (rápido dentro do limite de função da
+    // Vercel). Se qualquer statement falha, ROLLBACK desfaz tudo.
+    const pagesRows = DUMMY_TEMPLATE.pages.map((p) => ({
+      slug: p.slug, title: p.title, show_in_menu: p.show_in_menu,
+      parent_slug: p.parent_slug, menu_order: p.menu_order, company_id: orgId,
+    }))
+    const pageContentRows = DUMMY_TEMPLATE.pageContent.map((pc) => ({
+      page_slug: pc.page_slug, key: pc.key, value: pc.value, company_id: orgId,
+    }))
+    const contentRows = Object.entries(DUMMY_TEMPLATE.content).map(([key, value]) => ({
+      key, value, company_id: orgId,
+    }))
+    const imagesRows = DUMMY_TEMPLATE.images.map((img) => ({
+      id: crypto.randomUUID(), filename: img.filename, data: img.data, type: img.type,
+      component_type: img.component_type, thumbnail: img.thumbnail, company_id: orgId,
+    }))
+    const blogRows = DUMMY_TEMPLATE.blogPosts.map((post) => ({
+      id: crypto.randomUUID(), title: post.title, subtitle: post.subtitle, content: post.content,
+      author: post.author, date: post.date, tags: post.tags, images: post.images,
+      videos: post.videos, slug: post.slug, published: post.published, company_id: orgId,
+    }))
+
+    let pagesCopied = 0
+    let pageContentCopied = 0
+    let contentCopied = 0
+    let imagesCopied = 0
+    let blogCopied = 0
+
+    await req.db.execute('BEGIN')
+    try {
+      pagesCopied = await insertChunked(req.db, 'pages', ['slug', 'title', 'show_in_menu', 'parent_slug', 'menu_order', 'company_id'], pagesRows)
+      pageContentCopied = await insertChunked(req.db, 'page_content', ['page_slug', 'key', 'value', 'company_id'], pageContentRows)
+      contentCopied = await insertChunked(req.db, 'content', ['key', 'value', 'company_id'], contentRows)
+      imagesCopied = await insertChunked(req.db, 'images', ['id', 'filename', 'data', 'type', 'component_type', 'thumbnail', 'company_id'], imagesRows)
+      blogCopied = await insertChunked(req.db, 'blog_posts', ['id', 'title', 'subtitle', 'content', 'author', 'date', 'tags', 'images', 'videos', 'slug', 'published', 'company_id'], blogRows)
+      if (!adminExisting) {
+        await req.db.execute({
+          sql: 'INSERT INTO users (username, password_hash, role, email, company_id, must_change_password) VALUES (?, ?, ?, ?, ?, 1)',
+          args: [username, hash, adminRole, email, orgId],
+        })
+      }
+      await req.db.execute('COMMIT')
+    } catch (e) {
+      await req.db.execute('ROLLBACK').catch(() => {})
+      console.error('[organizations] onboarding failed:', e.message)
+      return res.status(500).json({ error: 'Falha ao provisionar a organização: ' + (e.message || String(e)) })
+    }
+
+    // Supabase: best-effort, fora da transação — falha aqui NÃO desfaz o Turso,
+    // mas é reportada na resposta para o usuário saber.
+    let supabaseOk = false
+    let supabaseError = ''
+    if (adminExisting) {
+      // Re-provisionamento: a conta Supabase da escola já existe — preservada.
+      supabaseOk = true
+      supabaseError = 'usuário existente preservado'
+    } else if (supabaseAdmin) {
+      try {
+        await supabaseAdmin.auth.admin.createUser({
+          email,
+          password,
+          email_confirm: true,
+          user_metadata: { role: adminRole, company_id: orgId },
+        })
+        supabaseOk = true
+        console.log('[organizations] Supabase user created for', orgId)
+      } catch (e) {
+        supabaseError = e.message || 'Unknown error'
+        console.error('[organizations] Supabase user creation failed:', e.message)
+      }
+    } else {
+      supabaseError = 'Supabase not configured'
+    }
+
+    res.json({
+      success: true,
+      username,
+      password: adminExisting ? null : password,
+      admin_existing: adminExisting,
+      email,
+      role: adminRole,
+      supabase: { ok: supabaseOk, error: supabaseError },
+      copied: {
+        pages: pagesCopied,
+        page_content: pageContentCopied,
+        content: contentCopied,
+        images: imagesCopied,
+        blog_posts: blogCopied,
+      },
+    })
   } catch (err) {
     console.error(`[api 500] ${res.req.method} ${res.req.originalUrl}`, err)
     res.status(500).json({ error: String(err) })
