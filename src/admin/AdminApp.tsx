@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../cms/api'
-import { AdminLogin, AdminDashboard, SectionEditor, PageManager, ImageLibrary, StyleEditor, BackupRestore, UserManager, HistoricoAlunos, HistoricoEditor, SupabaseUserManager, TurmasManager, ProfessoresManager, DisciplinasManager, MatriculasManager, NotasManager, FrequenciaManager, DiarioClasseManager, OcorrenciasManager, ConselhoClasseManager, AnosLetivosManager, GradeHorariaManager, OrganizationsManager } from './index'
+import { AdminLogin, AdminDashboard, SectionEditor, PageManager, ImageLibrary, StyleEditor, BackupRestore, UserManager, HistoricoAlunos, HistoricoEditor, SupabaseUserManager, TurmasManager, ProfessoresManager, DisciplinasManager, MatriculasManager, NotasManager, FrequenciaManager, DiarioClasseManager, CadastroManager, OcorrenciasManager, ConselhoClasseManager, AnosLetivosManager, GradeHorariaManager, OrganizationsManager } from './index'
 import AdminLoginSupabase from './AdminLoginSupabase'
 import { getRoleFromToken, getUsernameFromToken, ROLES } from '../cms/auth'
 import { fetchAdminPreload, fetchLoginLog, deleteLoginLog, fetchOrganizations, type Organization } from '../cms/api'
@@ -27,6 +27,7 @@ const VIEW_GROUP: Record<string, string> = {
   ocorrencias: 'academico',
   conselho_classe: 'academico',
   grade_horaria: 'academico',
+  cadastro: 'configuracoes',
   users: 'sistema',
   supabase_users: 'sistema',
   backups: 'sistema',
@@ -269,6 +270,9 @@ export default function AdminApp() {
     return (
       <div className="admin-wrapper">
         <AdminLogin onLogin={handleLogin} />
+        {/* Supabase SUSPENSO por enquanto — o bloco de login alternativo
+            (AdminLoginSupabase) permanece intacto no código; reativar o
+            botão abaixo quando o uso do Supabase voltar:
         <div style={{ textAlign: 'center', marginTop: 12 }}>
           <button
             onClick={() => setLoginView('supabase')}
@@ -286,6 +290,7 @@ export default function AdminApp() {
             Login via Server S. (experimental)
           </button>
         </div>
+        */}
       </div>
     )
   }
@@ -417,6 +422,8 @@ export default function AdminApp() {
         return <AnosLetivosManager />
       case 'grade_horaria':
         return <GradeHorariaManager />
+      case 'cadastro':
+        return <CadastroManager />
       case 'login_log':
         return <LoginLog />
       default:
@@ -481,6 +488,9 @@ export default function AdminApp() {
             ) : null}
             {isSuperAdmin || isGestorAdmin || isCoordenador || isSecretaria || isFinanceiro || isProfessor ? (
               <button type="button" className={`sidebar-rail-btn${VIEW_GROUP[view] === 'academico' ? ' active' : ''}`} title="Acadêmico" aria-label="Acadêmico" onClick={() => expandGroup('academico')}>🎓</button>
+            ) : null}
+            {isSuperAdmin || isGestorAdmin ? (
+              <button type="button" className={`sidebar-rail-btn${VIEW_GROUP[view] === 'configuracoes' ? ' active' : ''}`} title="Configurações" aria-label="Configurações" onClick={() => expandGroup('configuracoes')}>🗂️</button>
             ) : null}
             {canManageUsers ? (
               <button type="button" className={`sidebar-rail-btn${VIEW_GROUP[view] === 'sistema' ? ' active' : ''}`} title="Sistema" aria-label="Sistema" onClick={() => expandGroup('sistema')}>⚙️</button>
@@ -573,10 +583,19 @@ export default function AdminApp() {
             </SidebarGroup>
           ) : null}
 
+          {isSuperAdmin || isGestorAdmin ? (
+            <SidebarGroup title="Configurações" group="configuracoes">
+              <button className={view === 'cadastro' ? 'active' : ''} onClick={() => setView('cadastro')}>Cadastro</button>
+            </SidebarGroup>
+          ) : null}
+
           {canManageUsers ? (
             <SidebarGroup title="Sistema" group="sistema">
               <button className={view === 'users' ? 'active' : ''} onClick={() => setView('users')}>Usuários (T.)</button>
+              {/* Supabase SUSPENSO por enquanto — reativar este botão quando o
+                  uso voltar (a rota/aba segue intacta: view 'supabase_users')
               <button className={view === 'supabase_users' ? 'active' : ''} onClick={() => setView('supabase_users')}>Usuários (Server S.)</button>
+              */}
               {isSuperAdmin ? (
                 <>
                   <button className={view === 'backups' ? 'active' : ''} onClick={() => setView('backups')}>Backups</button>

@@ -274,3 +274,40 @@ export async function regenerateTenantPin(companyId: string) {
   const { data } = await api.post(`/organizations/${encodeURIComponent(companyId)}/regenerate-pin`)
   return data as { success: boolean; tenant_pin: string }
 }
+
+// ===== Cadastro da organização (dados jurídicos/fiscais + responsável) =====
+export interface OrgCadastro {
+  company_id: string
+  razao_social: string
+  nome_fantasia: string
+  cnpj: string
+  inscricao_estadual: string
+  inscricao_municipal: string
+  regime_tributario: string
+  endereco_logradouro: string
+  endereco_numero: string
+  endereco_complemento: string
+  endereco_bairro: string
+  endereco_cidade: string
+  endereco_estado: string
+  endereco_cep: string
+  telefone_corporativo: string
+  email_institucional: string
+  website: string
+  responsavel_nome: string
+  responsavel_cpf: string
+  responsavel_cargo: string
+  responsavel_email: string
+  responsavel_telefone: string
+  updated_at?: string
+}
+
+export async function fetchCadastro(): Promise<OrgCadastro> {
+  const { data } = await api.get('/cadastro')
+  return data as OrgCadastro
+}
+
+export async function updateCadastro(payload: Partial<OrgCadastro>) {
+  const { data } = await api.put('/cadastro', payload)
+  return data as { success: boolean }
+}

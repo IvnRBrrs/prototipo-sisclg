@@ -41,6 +41,9 @@ export default function Navbar({ content }: NavbarProps) {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
+  const schoolName = content.footer_copyright || content.hero_welcome || 'Instituição'
+  const logoSrc = content.nav_logo || ''
+
   return (
     <nav
       style={{
@@ -56,7 +59,11 @@ export default function Navbar({ content }: NavbarProps) {
     >
       <div className="navbar-inner container">
         <a href="/" className="logo">
-          <img src={content.nav_logo || '/stj/assets/logo-sao-judas-tadeu.png'} alt="Colégio São Judas Tadeu" className="logo-img" />
+          {logoSrc ? (
+            <img src={logoSrc} alt={schoolName} className="logo-img" />
+          ) : (
+            <span className="logo-text-fallback">{schoolName}</span>
+          )}
         </a>
 
         <div className="nav-links" ref={dropdownRef}>
@@ -196,11 +203,25 @@ export default function Navbar({ content }: NavbarProps) {
           display: flex;
           align-items: center;
           text-decoration: none;
+          min-width: 40px;
+          min-height: 52px;
         }
         .logo-img {
           height: 52px;
+          min-width: 40px;
           width: auto;
+          object-fit: contain;
           transition: height 0.3s, filter 0.3s;
+        }
+        .logo-text-fallback {
+          font-size: 1.1rem;
+          font-weight: 700;
+          color: var(--primary-dark);
+          white-space: nowrap;
+          transition: color 0.3s;
+        }
+        .navbar:not(.scrolled) .logo-text-fallback {
+          color: white;
         }
         .navbar:not(.scrolled) .logo-img {
           filter: brightness(0) invert(1);

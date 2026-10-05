@@ -20,6 +20,7 @@ const DATA_TABLES = [
   'pre_enrollments', 'login_log', 'turmas', 'professores', 'disciplinas',
   'turma_disciplinas', 'aluno_turmas', 'matriculas', 'notas', 'frequencia',
   'ocorrencias', 'anos_letivos', 'mensalidades', 'conselho_classe', 'horario_aulas',
+  'org_cadastro', 'aulas', 'avaliacoes', 'avaliacao_notas',
 ]
 
 function parseJSON(raw, fallback) {

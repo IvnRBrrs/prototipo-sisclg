@@ -38,7 +38,7 @@ function req(base, path, { method = 'GET', token, company, pinHeader, secFetchSi
     .then(async (res) => { let data = null; try { data = await res.json() } catch { } return { status: res.status, data } })
 }
 
-const COUNT_TABLES = ['organizations', 'content', 'pages', 'page_content', 'blog_posts', 'images', 'users', 'contact_messages', 'login_log']
+const COUNT_TABLES = ['organizations', 'content', 'pages', 'page_content', 'blog_posts', 'images', 'users', 'contact_messages']
 async function snapshot() {
   const s = {}
   for (const t of COUNT_TABLES) {
@@ -140,7 +140,7 @@ try {
 
   // ===== 4. SUPER_ADMIN pode escolher outra org no deploy pinado =====
   const superSwitch = await req(B, '/content', { token, company: 'colegio-peqbri' })
-  ok('PINADO: super + X-Company-Id troca de org (peqbri)', superSwitch.status === 200 && superSwitch.data.address?.includes('Rua Exemplo') && superSwitch.data[MARKER_KEY] === undefined, 'address=' + String(superSwitch.data.address || '').slice(0, 20))
+  ok('PINADO: super + X-Company-Id troca de org (peqbri)', superSwitch.status === 200 && superSwitch.data.footer_copyright?.includes('Pequenos Brilhantes') && superSwitch.data[MARKER_KEY] === undefined, 'copyright=' + String(superSwitch.data.footer_copyright || '').slice(0, 30))
 
   // ===== 5. MISMATCH frontend≠backend: backend vence + erro no log =====
   const mism = await req(B, '/content', { pinHeader: 'pin-errado-123' })
@@ -186,7 +186,14 @@ for (const k of Object.keys(PRE)) {
 }
 ok('NET-ZERO: banco idêntico ao início', diff.length === 0, diff.join('; '))
 ok('BASELINE orgs=2', POST.organizations === 2, 'n=' + POST.organizations)
-ok('BASELINE content=209 (V17 aplicada)', POST.content === 209, 'n=' + POST.content)
+ok('BASELINE content=210 (V17+V18 aplicadas)', POST.content === 210, 'n=' + POST.content)
+
+// login_log: NET-ZERO só dos padrões da suíte (logins REAIS — fal, ivan,
+// etc. — em paralelo são atividade normal, não resíduo de teste).
+{
+  const ll = await db.execute({ sql: "SELECT COUNT(*) AS n FROM login_log WHERE username LIKE '%__pin_super%'" })
+  ok('login_log limpo (padrões da suíte)', Number(ll.rows[0].n) === 0, 'n=' + ll.rows[0].n)
+}
 
 const fails = results.filter((r) => r.startsWith('FAIL'))
 console.log(`[resultado] ${results.length - fails.length}/${results.length} PASS`)

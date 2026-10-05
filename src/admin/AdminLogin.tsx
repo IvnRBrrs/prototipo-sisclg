@@ -47,7 +47,9 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
   return (
     <div className="admin-login">
       <div className="admin-login-card">
-        <h1 style={{ textAlign: 'center' }}>Colégio São Judas Tadeu</h1>
+        {/* Nome da escola REMOVIDO por enquanto (o deploy atual é da org
+            peqbri — branding por organização será tratado no futuro). */}
+        <h1 style={{ textAlign: 'center' }}>Painel Administrativo</h1>
 
         {mode === 'login' ? (
           <>

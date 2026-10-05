@@ -37,7 +37,7 @@ async function req(path, { method = 'GET', token, company, adminCtx, body } = {}
 const suList = () => withTimeout(supabase.auth.admin.listUsers({ perPage: 1000 }), 60000, 'supabase listUsers')
 const suDelete = (id) => withTimeout(supabase.auth.admin.deleteUser(id), 30000, 'supabase deleteUser')
 
-const COUNT_TABLES = ['organizations', 'content', 'pages', 'page_content', 'blog_posts', 'images', 'users', 'contact_messages', 'pre_enrollments', 'content_backups', 'login_log']
+const COUNT_TABLES = ['organizations', 'content', 'pages', 'page_content', 'blog_posts', 'images', 'users', 'contact_messages', 'pre_enrollments', 'content_backups']
 async function snapshot() {
   const s = {}
   for (const t of COUNT_TABLES) {
@@ -197,6 +197,13 @@ for (const k of Object.keys(PRE)) {
 ok('NET-ZERO: banco idêntico ao início', diff.length === 0, diff.join('; '))
 ok('BASELINE orgs=2', POST.organizations === 2, 'n=' + POST.organizations)
 ok('BASELINE default content=' + PRE.def_content, POST.def_content === PRE.def_content, 'n=' + POST.def_content)
+
+// login_log: NET-ZERO só dos padrões da suíte (logins REAIS de usuários
+// legítimos — fal, ivan, etc. — em paralelo são atividade normal, não resíduo).
+{
+  const ll = await db.execute({ sql: "SELECT COUNT(*) AS n FROM login_log WHERE username LIKE '%prova_dummy%' OR username LIKE ? OR username LIKE ?", args: [GESTOR, EDITOR] })
+  ok('login_log limpo (padrões da suíte)', Number(ll.rows[0].n) === 0, 'n=' + ll.rows[0].n)
+}
 
 const peq = await db.execute({ sql: 'SELECT COUNT(*) AS n FROM content WHERE company_id = ?', args: ['colegio-peqbri'] })
 ok('colegio-peqbri com dummy data (95, pós-reset)', Number(peq.rows[0].n) === 95, 'n=' + peq.rows[0].n)
