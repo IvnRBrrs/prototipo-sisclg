@@ -30,7 +30,10 @@ async function api(path: string, { method = 'GET', token, body }: { method?: str
   return { status: res.status, data }
 }
 
-const COUNT_TABLES = ['organizations', 'content', 'pages', 'page_content', 'blog_posts', 'images', 'users', 'contact_messages', 'login_log']
+// login_log NÃO entra no NET-ZERO genérico: logins REAIS de usuários
+// legítimos (fal, ivan, …) podem acontecer em paralelo com a suíte — a
+// limpeza por padrão de fixture (abaixo no cleanup) garante zero resíduo.
+const COUNT_TABLES = ['organizations', 'content', 'pages', 'page_content', 'blog_posts', 'images', 'users', 'contact_messages', 'org_cadastro']
 export type Snapshot = Record<string, number>
 export async function snapshot(): Promise<Snapshot> {
   const s: Snapshot = {}
@@ -43,8 +46,8 @@ export async function snapshot(): Promise<Snapshot> {
 
 export async function cleanupFixtures() {
   await db.execute({ sql: 'DELETE FROM users WHERE username IN (?, ?)', args: [UI_SUPER, UI_EDITOR] })
-  for (const t of ['page_content', 'pages', 'content', 'images', 'blog_posts', 'users']) {
-    await db.execute({ sql: `DELETE FROM ${t} WHERE company_id = ?`, args: [UI_ORG] })
+  for (const t of ['page_content', 'pages', 'content', 'images', 'blog_posts', 'users', 'org_cadastro']) {
+    await db.execute({ sql: `DELETE FROM ${t} WHERE company_id = ?`, args: [UI_ORG] }).catch(() => { })
   }
   await db.execute({ sql: 'DELETE FROM organizations WHERE id = ?', args: [UI_ORG] }).catch(() => { })
   await db.execute({ sql: "DELETE FROM login_log WHERE username LIKE '%__ui%' OR username LIKE '%uitestorg%'" })
@@ -59,11 +62,11 @@ export async function cleanupFixtures() {
   // o NET-ZERO do afterAll aponta exatamente o que sobrou.
   for (let attempt = 0; attempt < 5; attempt++) {
     await new Promise((r) => setTimeout(r, attempt === 0 ? 1500 : 1000))
-    for (const t of ['page_content', 'pages', 'content', 'images', 'blog_posts', 'users']) {
+    for (const t of ['page_content', 'pages', 'content', 'images', 'blog_posts', 'users', 'org_cadastro']) {
       await db.execute({ sql: `DELETE FROM ${t} WHERE company_id = ?`, args: [UI_ORG] })
     }
     let remaining = 0
-    for (const t of ['page_content', 'pages', 'content', 'images', 'blog_posts', 'users']) {
+    for (const t of ['page_content', 'pages', 'content', 'images', 'blog_posts', 'users', 'org_cadastro']) {
       const r = await db.execute(`SELECT COUNT(*) AS n FROM ${t} WHERE company_id = ?`, [UI_ORG])
       remaining += Number((r.rows[0] as any).n)
     }
@@ -109,8 +112,8 @@ export async function teardownFixtures(PRE: Snapshot): Promise<string[]> {
   return diff
 }
 
-export async function shot(page: Page, name: string) {
-  await page.screenshot({ path: `e2e/artifacts/screenshots/${name}.png`, fullPage: false })
+export async function shot(page: Page, name: string, opts: { fullPage?: boolean } = {}) {
+  await page.screenshot({ path: `e2e/artifacts/screenshots/${name}.png`, fullPage: opts.fullPage ?? false })
 }
 
 // Preenche o formulário de login do painel (usuário humano digitando).

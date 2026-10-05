@@ -845,6 +845,43 @@ export async function initDb(db) {
     console.error('[db.js] Migration V17 FAILED:', e.message)
   }
 
+  // V18 migration: Cadastro da organização — dados jurídicos/fiscais e do
+  // responsável legal (uma linha por organização, PK = company_id). Serão
+  // usados futuramente para faturamento/contratos.
+  try {
+    const v18Check = await db.execute(`SELECT value FROM content WHERE key = '_migration_v18'`)
+    if (v18Check.rows.length === 0) {
+      await db.execute(`CREATE TABLE IF NOT EXISTS org_cadastro (
+        company_id TEXT PRIMARY KEY,
+        razao_social TEXT DEFAULT '',
+        nome_fantasia TEXT DEFAULT '',
+        cnpj TEXT DEFAULT '',
+        inscricao_estadual TEXT DEFAULT '',
+        inscricao_municipal TEXT DEFAULT '',
+        regime_tributario TEXT DEFAULT '',
+        endereco_logradouro TEXT DEFAULT '',
+        endereco_numero TEXT DEFAULT '',
+        endereco_complemento TEXT DEFAULT '',
+        endereco_bairro TEXT DEFAULT '',
+        endereco_cidade TEXT DEFAULT '',
+        endereco_estado TEXT DEFAULT '',
+        endereco_cep TEXT DEFAULT '',
+        telefone_corporativo TEXT DEFAULT '',
+        email_institucional TEXT DEFAULT '',
+        website TEXT DEFAULT '',
+        responsavel_nome TEXT DEFAULT '',
+        responsavel_cpf TEXT DEFAULT '',
+        responsavel_cargo TEXT DEFAULT '',
+        responsavel_email TEXT DEFAULT '',
+        responsavel_telefone TEXT DEFAULT '',
+        updated_at TEXT DEFAULT (datetime('now')))`)
+      await db.execute(`INSERT OR IGNORE INTO content (key, value) VALUES ('_migration_v18', '1')`)
+      console.log('[db.js] Migration V18 complete (org_cadastro)')
+    }
+  } catch (e) {
+    console.error('[db.js] Migration V18 FAILED:', e.message)
+  }
+
   // Seed alunos fictícios (runs once regardless of migration status)
   try {
     const seedCheck = await db.execute(`SELECT value FROM content WHERE key = '_seed_alunos_version'`)

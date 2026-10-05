@@ -1,9 +1,28 @@
 import { useState, useEffect, Suspense } from 'react'
-import { bulkUpdateContent, updatePageContent } from '../cms/api'
+import { bulkUpdateContent, updatePageContent, fetchCadastro, type OrgCadastro } from '../cms/api'
 import { fetchPagesCachedAdmin, fetchContentCachedAdmin, fetchPageContentCachedAdmin, invalidateCache } from '../cms/contentCache'
 import { getModularSection } from '../cms/registry'
 import { AdminProps } from '../cms/types'
 import ImagePickerModal from './ImagePickerModal'
+
+// Mapeamento: content key → campo do Cadastro da organização (org_cadastro).
+// O botão "Importar do Cadastro" aparece quando a seção atual tem pelo menos
+// 1 key com mapeamento. Ao clicar, busca o cadastro e preenche via onUpdate.
+const CADASTRO_MAP: Record<string, (cad: OrgCadastro) => string> = {
+  address: (cad) => [cad.endereco_logradouro, cad.endereco_numero, cad.endereco_complemento, cad.endereco_bairro, cad.endereco_cidade, cad.endereco_estado, cad.endereco_cep].filter(Boolean).join(', '),
+  footer_address: (cad) => [cad.endereco_logradouro, cad.endereco_numero, cad.endereco_complemento, cad.endereco_bairro, cad.endereco_cidade, cad.endereco_estado, cad.endereco_cep].filter(Boolean).join(', '),
+  map_address: (cad) => [cad.endereco_logradouro, cad.endereco_numero, cad.endereco_bairro, cad.endereco_cidade, cad.endereco_estado, cad.endereco_cep].filter(Boolean).join(', '),
+  phone_fixo: (cad) => cad.telefone_corporativo,
+  footer_phone_fixo: (cad) => cad.telefone_corporativo,
+  phone_whatsapp: (cad) => cad.responsavel_telefone,
+  footer_phone_whatsapp: (cad) => cad.responsavel_telefone,
+  footer_copyright: (cad) => cad.nome_fantasia || cad.razao_social,
+  footer_description: (cad) => cad.nome_fantasia ? `${cad.nome_fantasia} — ${cad.razao_social}` : cad.razao_social,
+  hero_welcome: (cad) => cad.nome_fantasia ? `Bem-vindo ao ${cad.nome_fantasia}` : '',
+  website: (cad) => cad.website,
+  social_instagram_url: (cad) => cad.website ? `https://instagram.com/${cad.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\..*$/, '')}` : '',
+  social_instagram_handle: (cad) => cad.website ? `@${cad.website.replace(/^https?:\/\/(www\.)?/, '').replace(/\..*$/, '')}` : '',
+}
 
 interface SectionEditorProps {
   sectionTitle: string
@@ -21,6 +40,8 @@ export default function SectionEditor({ sectionTitle, onBack }: SectionEditorPro
   const [saved, setSaved] = useState(false)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [imagePickerField, setImagePickerField] = useState<string | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [importMsg, setImportMsg] = useState('')
 
   useEffect(() => {
     fetchPagesCachedAdmin().then(({ data }) => setPages(data)).catch(() => {})
@@ -163,6 +184,38 @@ export default function SectionEditor({ sectionTitle, onBack }: SectionEditorPro
     setEditingItemId,
   }
 
+  // ===== Importar do Cadastro =====
+  const sectionKeys = mod ? mod.schema.keys.map((k) => k.key) : []
+  const mappableKeys = sectionKeys.filter((key) => CADASTRO_MAP[key])
+  const hasMappable = mappableKeys.length > 0
+
+  const importFromCadastro = async () => {
+    setImporting(true)
+    setImportMsg('')
+    try {
+      const cad = await fetchCadastro()
+      let filled = 0
+      let skipped = 0
+      for (const key of mappableKeys) {
+        const val = CADASTRO_MAP[key](cad)
+        if (val && val.trim()) {
+          handleUpdate(key, val)
+          filled++
+        } else {
+          skipped++
+        }
+      }
+      setImportMsg(filled > 0
+        ? `✓ ${filled} campo(s) importado(s) do cadastro${skipped > 0 ? ` (${skipped} sem dados no cadastro)` : ''}. Revise e salve.`
+        : 'Nenhum dado encontrado no cadastro para esta seção. Preencha o Cadastro da organização primeiro (Configurações > Cadastro).')
+    } catch (err: any) {
+      setImportMsg(err.response?.data?.error || 'Erro ao importar do cadastro')
+    } finally {
+      setImporting(false)
+      setTimeout(() => setImportMsg(''), 6000)
+    }
+  }
+
   if (!mod) {
     return (
       <div className="admin-editor">
@@ -198,7 +251,29 @@ export default function SectionEditor({ sectionTitle, onBack }: SectionEditorPro
         <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
           {saving ? 'Salvando...' : saved ? '✓ Salvo!' : 'Salvar'}
         </button>
+        {hasMappable && (
+          <button
+            className="btn btn-outline"
+            onClick={importFromCadastro}
+            disabled={importing}
+            title="Preenche os campos desta seção com os dados salvos em Configurações > Cadastro"
+            style={{ whiteSpace: 'nowrap' }}
+          >
+            {importing ? 'Importando...' : '📋 Cadastro'}
+          </button>
+        )}
       </div>
+      {importMsg && (
+        <div style={{
+          padding: '8px 16px', margin: '0 16px 4px', borderRadius: 6,
+          background: importMsg.startsWith('✓') ? 'rgba(22,163,74,0.08)' : 'rgba(180,83,9,0.08)',
+          border: `1px solid ${importMsg.startsWith('✓') ? 'rgba(22,163,74,0.2)' : 'rgba(180,83,9,0.2)'}`,
+          fontSize: '0.78rem',
+          color: importMsg.startsWith('✓') ? '#16a34a' : '#b45309',
+        }}>
+          {importMsg}
+        </div>
+      )}
       {selectedPage && (
         <div style={{
           padding: '8px 16px', margin: '0 16px', borderRadius: 6,

@@ -1939,3 +1939,169 @@
   min-width: 8px;
   border-radius: 50%;
 }
+/* ===== Cadastro da Organização (Configurações > Cadastro) ===== */
+.cadastro-fieldset {
+  border: 1px solid var(--primary-light);
+  border-radius: 10px;
+  padding: 16px 16px 8px;
+  margin: 0 0 20px;
+}
+
+.cadastro-fieldset legend {
+  font-weight: 700;
+  color: var(--primary-dark);
+  font-size: 0.9rem;
+  padding: 0 8px;
+}
+
+/* Ficha A4 (tela e impressão) */
+.cadastro-print-doc {
+  width: 210mm;
+  max-width: 100%;
+  min-height: 297mm;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid #d4d4d4;
+  border-radius: 4px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.12);
+  padding: 15mm 14mm;
+  color: #111;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.cad-doc-header {
+  text-align: center;
+  border-bottom: 2px solid #111;
+  padding-bottom: 12px;
+  margin-bottom: 18px;
+}
+
+.cad-doc-header h1 {
+  font-size: 17pt;
+  margin: 0 0 4px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.cad-doc-org {
+  font-size: 12pt;
+  margin: 0 0 2px;
+  font-weight: 700;
+}
+
+.cad-doc-meta {
+  font-size: 8.5pt;
+  color: #555;
+  margin: 0;
+}
+
+.cad-doc-section {
+  margin-bottom: 16px;
+}
+
+.cad-doc-section h2 {
+  font-size: 11pt;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #999;
+  padding-bottom: 4px;
+  margin: 0 0 10px;
+}
+
+.cad-doc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px 18px;
+}
+
+.cad-doc-grid > div {
+  display: flex;
+  flex-direction: column;
+  border-left: 2px solid #e2e2e2;
+  padding-left: 8px;
+}
+
+.cad-doc-grid span {
+  font-size: 7.5pt;
+  text-transform: uppercase;
+  color: #666;
+  letter-spacing: 0.4px;
+}
+
+.cad-doc-grid strong {
+  font-size: 10pt;
+  font-weight: 600;
+  min-height: 14px;
+  word-break: break-word;
+}
+
+.cad-doc-full {
+  grid-column: 1 / -1;
+}
+
+.cad-doc-footer {
+  margin-top: 28px;
+  border-top: 1px solid #bbb;
+  padding-top: 10px;
+  text-align: center;
+}
+
+.cad-doc-sign {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 26px auto 8px;
+  width: fit-content;
+  font-size: 9pt;
+}
+
+.cad-doc-sign span:first-child {
+  font-size: 11pt;
+}
+
+.cad-doc-footer p {
+  font-size: 7.5pt;
+  color: #777;
+  margin: 4px 0 0;
+}
+
+/* Impressão: apenas a ficha A4 sai no papel */
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .cadastro-print-doc,
+  .cadastro-print-doc * {
+    visibility: visible !important;
+  }
+
+  .cadastro-print-doc {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 210mm !important;
+    min-height: auto !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+}
+
+/* ===== Botão Importar do Cadastro (SectionEditor) ===== */
+.admin-editor-header .btn-outline[title*="Cadastro"] {
+  background: rgba(29, 78, 216, 0.04);
+  border: 1px dashed var(--primary-light);
+  color: var(--primary);
+  font-size: 0.78rem;
+}
+
+.admin-editor-header .btn-outline[title*="Cadastro"]:hover {
+  background: rgba(29, 78, 216, 0.08);
+  border-color: var(--primary);
+}

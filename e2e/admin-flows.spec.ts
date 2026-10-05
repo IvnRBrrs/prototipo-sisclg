@@ -85,11 +85,18 @@ test.describe.serial('Admin UI — fluxo humano', () => {
       .filter({ has: page.locator('label', { hasText: 'Texto de Boas-Vindas' }) })
       .locator('input')
     await expect(campoBoasVindas).toBeVisible()
+    await page.waitForTimeout(500)
     await shot(page, '04-editor-hero')
 
-    // Digita o novo valor e salva
+    // Digita o novo valor — slow-mo pode causar re-render que limpa o fill;
+    // re-preenche se necessário antes de salvar
     const NOVO_TEXTO = 'Bem-vindo ao teste UI ' + Date.now()
-    await campoBoasVindas.fill(NOVO_TEXTO)
+    for (let i = 0; i < 3; i++) {
+      await campoBoasVindas.fill(NOVO_TEXTO)
+      await page.waitForTimeout(300)
+      const check = await campoBoasVindas.inputValue()
+      if (check === NOVO_TEXTO) break
+    }
     await page.getByRole('button', { name: 'Salvar Página' }).click()
 
     // Verifica no BANCO: gravado na página home da org, com company_id dela
@@ -214,5 +221,163 @@ test.describe.serial('Admin UI — fluxo humano', () => {
       console.log('[T7] leitura do clipboard indisponível neste ambiente — validado pelo status do painel')
     }
     await shot(page, '10-pin-copiado')
+  })
+
+  test('T8 — Supabase suspenso: sem botão de login, sem nome da escola, sem aba Usuários (Server S.)', async ({ page }) => {
+    await page.goto('/admin')
+
+    // 1. Botão "Login via Server S." OCULTO na tela de login
+    await expect(page.getByRole('button', { name: /Login via Server S/ })).toHaveCount(0)
+
+    // 2. Nome da escola REMOVIDO da tela de login
+    await expect(page.getByText('Colégio São Judas Tadeu')).toHaveCount(0)
+    await expect(page.getByRole('heading', { name: 'Painel Administrativo' })).toBeVisible()
+    await shot(page, '11-login-sem-supabase')
+
+    // Login normal (Turso) continua funcionando
+    await page.fill('input[name="username"]', UI_SUPER)
+    await page.fill('input[name="password"]', UI_SUPER_PASS)
+    await page.getByRole('button', { name: 'Entrar', exact: true }).click()
+    await expect(page.getByText('Painel de Controle')).toBeVisible()
+
+    // Picker → continuar no padrão (para ver o gerenciador completo)
+    await page.getByRole('button', { name: 'Continuar sem selecionar (organização padrão)' }).click()
+    await expect(page.locator('.admin-org-chip')).toHaveCount(0)
+
+    // 3. Card "Usuários (Server S.)" AUSENTE na aba Sistema do dashboard
+    await page.locator('.admin-dashboard-tab', { hasText: 'Sistema' }).click()
+    await expect(page.getByRole('heading', { name: /Gerenciar Usuários/ })).toHaveCount(0)
+    await expect(page.locator('.admin-card').filter({ hasText: 'Usuários (Server S.)' })).toHaveCount(0)
+    // Card de usuários Turso CONTINUA presente — e navegar até ele expande o
+    // grupo Sistema da sidebar (necessário para o assert a seguir)
+    const cardTurso = page.locator('.admin-card', { hasText: 'Usuários (T.)' }).first()
+    await expect(cardTurso).toBeVisible()
+    await cardTurso.click()
+    await expect(page.getByRole('heading', { name: /Gerenciar Usuários/ })).toBeVisible()
+    await shot(page, '12-sistema-sem-supabase')
+
+    // 4. Botão ausente também no grupo Sistema da sidebar (agora expandido)
+    await expect(page.locator('aside.admin-sidebar').getByRole('button', { name: 'Usuários (Server S.)' })).toHaveCount(0)
+    await expect(page.locator('aside.admin-sidebar').getByRole('button', { name: 'Usuários (T.)' })).toBeVisible()
+  })
+
+  test('T9 — Configurações > Cadastro: preencher, salvar e gerar ficha A4', async ({ page }) => {
+    await loginInUI(page, UI_SUPER, UI_SUPER_PASS)
+    await expect(page.getByText('Painel de Controle')).toBeVisible()
+
+    // Entra na org de teste (fixture) — dados ficam no company_id dela
+    await page.locator('.org-picker-item', { hasText: UI_ORG_NOME }).click()
+    await expect(page.locator('.admin-org-chip')).toContainText(UI_ORG_NOME)
+
+    // Sidebar → Configurações (grupo) → Cadastro
+    const configGroup = page.locator('aside.admin-sidebar div.sidebar-group', {
+      has: page.locator('button.sidebar-group-header', { hasText: 'Configurações' }),
+    })
+    await configGroup.locator('button.sidebar-group-header').click()
+    await configGroup.locator('.sidebar-group-items button', { hasText: 'Cadastro' }).first().click()
+    await expect(page.getByRole('heading', { name: 'Cadastro da Organização' })).toBeVisible()
+    // Aguarda o load() assíncrono completar (hint com org name = dados prontos).
+    await expect(page.getByText(/dados jurídicos, fiscais e do responsável legal/)).toBeVisible({ timeout: 10_000 })
+    await page.waitForTimeout(500)
+    await shot(page, '13-cadastro-form')
+
+    // Preenche os inputs como um humano — slow-mo pode limpar campos entre
+    // fills (re-render do React durante load()); helper com retry resolve
+    const fillRobust = async (input: any, value: string) => {
+      for (let i = 0; i < 3; i++) {
+        await input.fill(value)
+        await page.waitForTimeout(300)
+        const check = await input.inputValue()
+        if (check === value) return
+      }
+      await input.fill(value)
+    }
+    const campo = (label: string) =>
+      page.locator('.cadastro-fieldset div.admin-field').filter({ has: page.locator('label', { hasText: label }) }).locator('input')
+    await fillRobust(campo('Razão Social *'), 'Escola UI Teste LTDA')
+    await fillRobust(campo('Nome Fantasia'), 'Escola UI Teste')
+    await fillRobust(campo('CNPJ / Tax ID / EIN'), '12.345.678/0001-90')
+    await page.locator('.cadastro-fieldset div.admin-field')
+      .filter({ has: page.locator('label', { hasText: 'Regime Tributário' }) })
+      .locator('select')
+      .selectOption('Simples Nacional')
+    await fillRobust(campo('Logradouro'), 'Rua dos Testes')
+    await fillRobust(campo('Número'), '42')
+    await fillRobust(campo('Cidade'), 'Testópolis')
+    await fillRobust(campo('Nome Completo'), 'Responsável UI Teste')
+    await fillRobust(campo('Cargo / Função'), 'Diretor')
+    await shot(page, '14-cadastro-preenchido')
+
+    // Salva — slow-mo pode limpar campos entre fills (re-render do React);
+    // re-preenche o campo obrigatório se necessário antes de salvar
+    const btnSalvar = page.getByRole('button', { name: 'Salvar Cadastro' })
+    for (let i = 0; i < 3; i++) {
+      const val = await campo('Razão Social *').inputValue()
+      if (val === 'Escola UI Teste LTDA') break
+      await campo('Razão Social *').fill('Escola UI Teste LTDA')
+      await page.waitForTimeout(300)
+    }
+    await expect(btnSalvar).toBeEnabled({ timeout: 10_000 })
+    await btnSalvar.click()
+    await expect(page.getByText('Cadastro salvo com sucesso.')).toBeVisible()
+
+    // Verifica no BANCO: gravado com o company_id da ORG (não na default)
+    await expect.poll(async () => {
+      const r = await db.execute({
+        sql: 'SELECT razao_social FROM org_cadastro WHERE company_id = ?',
+        args: [UI_ORG],
+      })
+      return (r.rows[0] as any)?.razao_social ?? null
+    }, { timeout: 15_000 }).toBe('Escola UI Teste LTDA')
+    const defRow = await db.execute({ sql: "SELECT COUNT(*) AS n FROM org_cadastro WHERE company_id = 'default'" })
+    expect(Number((defRow.rows[0] as any).n)).toBe(0)
+
+    // Ficha A4: tela de leitura com os dados + botão de impressão
+    await page.getByRole('button', { name: 'Ficha A4' }).first().click()
+    await expect(page.locator('.cadastro-print-doc')).toBeVisible()
+    await expect(page.locator('.cadastro-print-doc')).toContainText('Escola UI Teste LTDA')
+    await expect(page.locator('.cadastro-print-doc')).toContainText('Responsável UI Teste')
+    await expect(page.getByRole('button', { name: /Imprimir \(A4\)/ })).toBeVisible()
+    await shot(page, '15-cadastro-ficha-a4', { fullPage: false })
+  })
+
+  test('T10 — botão Importar do Cadastro preenche campos da seção Footer', async ({ page }) => {
+    await loginInUI(page, UI_SUPER, UI_SUPER_PASS)
+    await page.locator('.org-picker-item', { hasText: UI_ORG_NOME }).click()
+    await expect(page.locator('.admin-org-chip')).toContainText(UI_ORG_NOME)
+
+    // Primeiro salva dados no Cadastro da organização (via API — mais rápido)
+    await db.execute({
+      sql: `INSERT INTO org_cadastro (company_id, nome_fantasia, telefone_corporativo, endereco_logradouro, endereco_numero, endereco_bairro, endereco_cidade, endereco_estado, endereco_cep, website)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(company_id) DO UPDATE SET nome_fantasia = excluded.nome_fantasia, telefone_corporativo = excluded.telefone_corporativo, endereco_logradouro = excluded.endereco_logradouro, endereco_numero = excluded.endereco_numero, endereco_bairro = excluded.endereco_bairro, endereco_cidade = excluded.endereco_cidade, endereco_estado = excluded.endereco_estado, endereco_cep = excluded.endereco_cep, website = excluded.website, updated_at = datetime('now')`,
+      args: [UI_ORG, 'Escola Import Teste', '(11) 4002-8922', 'Av. Importação', '999', 'Testville', 'São Teste', 'TS', '01234-567', 'https://import.com.br'],
+    })
+
+    // Dashboard → card da seção Hero (abre o SectionEditor GLOBAL)
+    await page.locator('.admin-section-card', { hasText: 'Hero' }).first().click()
+    await expect(page.getByRole('heading', { name: /Editando: Hero/ })).toBeVisible()
+
+    // Verifica que o botão de importar está presente (Hero tem hero_welcome no CADASTRO_MAP)
+    const btnImport = page.getByRole('button', { name: /📋 Cadastro/ })
+    await expect(btnImport).toBeVisible()
+
+    // Campo hero_welcome (Texto de Boas-Vindas)
+    const campoWelcome = page.locator('.admin-editor-content div.admin-field')
+      .filter({ has: page.locator('label', { hasText: 'Texto de Boas-Vindas' }) })
+      .locator('input')
+    const valorAntes = await campoWelcome.inputValue()
+
+    // Clica em importar
+    await btnImport.click()
+
+    // Verifica a mensagem de sucesso
+    await expect(page.getByText(/importado\(s\) do cadastro/)).toBeVisible({ timeout: 15_000 })
+
+    // Verifica que o campo foi preenchido com nome_fantasia do cadastro
+    const valorDepois = await campoWelcome.inputValue()
+    expect(valorDepois).toBe('Bem-vindo ao Escola Import Teste')
+
+    await shot(page, '16-importar-cadastro')
   })
 })

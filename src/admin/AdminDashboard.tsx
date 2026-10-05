@@ -24,6 +24,9 @@ interface DashItem {
 export default function AdminDashboard({ onNavigate, unreadMessages, unreadPreEnrollments, role, activeCompanyId = null, activeCompanyName = null, onEnterCompany, onLeaveCompany }: AdminDashboardProps) {
   const [openGroup, setOpenGroup] = useState('conteudo')
 
+  // Supabase SUSPENSO por enquanto — reativar (true) quando o uso voltar.
+  const SUPABASE_UI_ATIVO = false
+
   const sectionTitles = getAllSectionTitles()
 
   const frontendSectionTitles = [
@@ -60,6 +63,7 @@ export default function AdminDashboard({ onNavigate, unreadMessages, unreadPreEn
     { key: 'comunicacao', title: 'Comunicação', show: isSuperAdmin || isGestorAdmin || isCoordenador || isSecretaria, badge: commBadge },
     { key: 'cadastros', title: 'Cadastros', show: isSuperAdmin || isGestorAdmin || isCoordenador || isSecretaria },
     { key: 'academico', title: 'Acadêmico', show: isSuperAdmin || isGestorAdmin || isCoordenador || isSecretaria || isFinanceiro || isProfessor },
+    { key: 'configuracoes', title: 'Configurações', show: isSuperAdmin || isGestorAdmin },
     { key: 'sistema', title: 'Sistema', show: canManageUsers },
   ]
 
@@ -92,9 +96,12 @@ export default function AdminDashboard({ onNavigate, unreadMessages, unreadPreEn
       item('ocorrencias', '⚠️', 'Ocorrências', 'Registro de ocorrências dos alunos', isSuperAdmin || isGestorAdmin || isCoordenador || isProfessor),
       item('conselho_classe', '🏛️', 'Conselho de Classe', 'Pareceres e consolidação de resultados', isSuperAdmin || isGestorAdmin || isCoordenador),
     ],
+    configuracoes: [
+      item('cadastro', '🗂️', 'Cadastro', 'Dados jurídicos, fiscais e do responsável legal da organização', isSuperAdmin || isGestorAdmin),
+    ],
     sistema: [
       item('users', '👥', 'Usuários (T.)', 'Criar e gerenciar usuários', canManageUsers),
-      item('supabase_users', '🔐', 'Usuários (Server S.)', 'Gerenciar usuários do Server S.', isSuperAdmin || isGestorAdmin),
+      item('supabase_users', '🔐', 'Usuários (Server S.)', 'Gerenciar usuários do Server S.', SUPABASE_UI_ATIVO && (isSuperAdmin || isGestorAdmin)),
       item('backups', '💾', 'Backups', 'Gerenciar backups do conteúdo', isSuperAdmin),
       item('setup', '⚙️', 'Configuração Inicial', 'Criar usuário admin (primeiro acesso)', isSuperAdmin),
       item('login_log', '🕵️', 'Log de Acesso', 'Histórico de logins', isSuperAdmin),
