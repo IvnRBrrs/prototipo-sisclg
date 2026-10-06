@@ -18,7 +18,7 @@ export default function About() {
               <span className="highlight">História</span>
             </h2>
             <p className="about-copy">
-              Fundado em 1989, o <strong>Colégio São Judas Tadeu</strong> é uma instituição
+              Fundado em 1989, a <strong>Escola Pequenos Brilhantes</strong> é uma instituição
               com a missão de desempenhar um papel fundamental na formação
               e desenvolvimento dos alunos. A sua história é caracterizada
               pela visão da excelência acadêmica e compromisso em oferecer

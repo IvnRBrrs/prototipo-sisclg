@@ -25,7 +25,7 @@ function FAQItem({ item, index }: { item: Record<string, string>; index: number 
           fill="none"
           className={`faq-arrow ${open ? 'open' : ''}`}
         >
-          <path d="M5 8L10 13L15 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M5 8L10 13L15 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
       <AnimatePresence>
@@ -50,7 +50,7 @@ export default function FAQ({ content }: FAQProps) {
   try {
     const raw = content._faq_items
     if (raw) items = JSON.parse(raw)
-  } catch {}
+  } catch { }
 
   if (items.length === 0) return null
 
@@ -69,7 +69,7 @@ export default function FAQ({ content }: FAQProps) {
             {content.faq_title_prefix || 'Perguntas'} <span className="highlight">{content.faq_title_highlight || 'Frequentes'}</span>
           </h2>
           <p className="section-subtitle">
-            {content.faq_subtitle || 'Tire suas principais dúvidas sobre o Colégio São Judas Tadeu.'}
+            {content.faq_subtitle || 'Tire suas principais dúvidas sobre o Escola Pequenos Brilhantes.'}
           </p>
         </motion.div>
 

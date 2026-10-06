@@ -66,7 +66,7 @@ export default function Navbar() {
     >
       <div className="navbar-inner container">
         <a href="#hero" className="logo">
-          <img src="/stj/assets/logo-sao-judas-tadeu.png" alt="Colégio São Judas Tadeu" className="logo-img" />
+          <img src="/stj/assets/logo-sao-judas-tadeu.png" alt="Escola Pequenos Brilhantes" className="logo-img" />
         </a>
 
         <div className="nav-links" ref={dropdownRef}>

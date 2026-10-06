@@ -6,7 +6,7 @@ const schema: SectionSchema = {
     { key: 'faq_label', label: 'Label da Seção', type: 'text', default: 'FAQ' },
     { key: 'faq_title_prefix', label: 'Prefixo do Título', type: 'text', default: 'Perguntas' },
     { key: 'faq_title_highlight', label: 'Destaque do Título', type: 'text', default: 'Frequentes' },
-    { key: 'faq_subtitle', label: 'Subtítulo', type: 'textarea', default: 'Tire suas principais dúvidas sobre o Colégio São Judas Tadeu.' },
+    { key: 'faq_subtitle', label: 'Subtítulo', type: 'textarea', default: 'Tire suas principais dúvidas sobre a Escola Pequenos Brilhantes.' },
   ],
   listKey: '_faq_items',
   listFields: [

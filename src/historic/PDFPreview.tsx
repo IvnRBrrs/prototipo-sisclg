@@ -111,9 +111,9 @@ export const PDFPreview = ({ data }: { data: HistoricoData }) => {
                             <img src="/stj/assets/logo.png" className="h-full w-auto max-h-16 object-contain" />
                         </div>
                         <div className="flex flex-col items-center">
-                            <div className="text-[14px] font-bold">COLÉGIO SÃO JUDAS TADEU</div>
-                            <div className="text-[9px]">CNPJ 24.464.554/0001-08</div>
-                            <div className="text-[9px]">Rua Adolfo Gustavo, 435, Serraria.</div>
+                            <div className="text-[14px] font-bold">ESCOLA PEQUENOS BRILHANTES</div>
+                            <div className="text-[9px]">CNPJ 24711404000117</div>
+                            <div className="text-[9px]">Rua Manoel da Silva, 150, Clima Bom II, Maceió - AL.</div>
                             <div className="text-[9px]">Maceió-AL, CEP 57046-341.</div>
                         </div>
                         <div className="flex items-center justify-end h-full w-[25%] pr-2">

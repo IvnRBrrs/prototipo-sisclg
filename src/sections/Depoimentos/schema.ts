@@ -14,9 +14,9 @@ const schema: SectionSchema = {
     { key: 'texto', label: 'Depoimento', type: 'textarea' },
   ],
   defaultItems: [
-    { nome: 'Maria Clara Silva', relacao: 'Mãe de aluno — Anos Iniciais', texto: 'O Colégio São Judas Tadeu foi a melhor escolha para a educação dos meus filhos.' },
-    { nome: 'Carlos Eduardo Mendes', relacao: 'Ex-aluno — Ensino Médio', texto: 'Levo comigo os valores e a base sólida que adquiri no São Judas.' },
-    { nome: 'Ana Beatriz Oliveira', relacao: 'Professora', texto: 'Trabalhar no São Judas é gratificante. Aqui temos liberdade pedagógica e uma equipe engajada.' },
+    { nome: 'Maria Clara Silva', relacao: 'Mãe de aluno — Anos Iniciais', texto: 'A Escola Pequenos Brilhantes foi a melhor escolha para a educação dos meus filhos.' },
+    { nome: 'Carlos Eduardo Mendes', relacao: 'Ex-aluno — Ensino Médio', texto: 'Levo comigo os valores e a base sólida que adquiri na Escola Pequenos Brilhantes.' },
+    { nome: 'Ana Beatriz Oliveira', relacao: 'Professora', texto: 'Trabalhar na Escola Pequenos Brilhantes é gratificante. Aqui temos liberdade pedagógica e uma equipe engajada.' },
   ],
 }
 

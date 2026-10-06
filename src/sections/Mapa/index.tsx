@@ -39,7 +39,7 @@ export default function Mapa({ content }: MapaProps) {
             allowFullScreen
             loading="lazy"
             referrerPolicy="no-referrer-when-downgrade"
-            title="Mapa do Colégio São Judas Tadeu"
+            title="Mapa da Escola Pequenos Brilhantes"
           />
         </motion.div>
       </div>

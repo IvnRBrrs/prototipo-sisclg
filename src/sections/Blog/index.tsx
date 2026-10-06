@@ -45,15 +45,15 @@ export default function Blog({ content }: BlogProps) {
       })
       setPosts(data.posts)
       setTotalPages(data.totalPages)
-    } catch {} finally { setLoading(false) }
+    } catch { } finally { setLoading(false) }
   }, [page, perPage, searchInput, tagFilter, authorFilter, yearFilter, monthFilter])
 
   useEffect(() => { loadPosts() }, [loadPosts])
 
   useEffect(() => {
-    fetchBlogTags().then(setTags).catch(() => {})
-    fetchBlogAuthors().then(setAuthors).catch(() => {})
-    fetchBlogArchive().then(setArchive).catch(() => {})
+    fetchBlogTags().then(setTags).catch(() => { })
+    fetchBlogAuthors().then(setAuthors).catch(() => { })
+    fetchBlogArchive().then(setArchive).catch(() => { })
   }, [])
 
   const handleSearch = (e: React.FormEvent) => {
@@ -79,7 +79,7 @@ export default function Blog({ content }: BlogProps) {
       const data = await fetchBlogPost(id)
       setSelectedPost(data)
       setCurrentImage(0)
-    } catch {}
+    } catch { }
   }
 
   const applyArchiveFilter = (year: string, month: string) => {
@@ -100,28 +100,28 @@ export default function Blog({ content }: BlogProps) {
   const formatDate = (d: string) => {
     if (!d) return ''
     const [y, m, day] = d.split('-')
-    const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+    const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
     return `${parseInt(day)} de ${months[parseInt(m) - 1]} de ${y}`
   }
 
   const monthName = (m: string) => {
-    const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+    const months = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
     return months[parseInt(m) - 1] || m
   }
 
   if (selectedPost) {
     let images: { url: string; alt?: string }[] = []
     let videos: { url: string; platform?: string; caption?: string }[] = []
-    try { if (selectedPost.images) images = JSON.parse(selectedPost.images) } catch {}
-    try { if (selectedPost.videos) videos = JSON.parse(selectedPost.videos) } catch {}
+    try { if (selectedPost.images) images = JSON.parse(selectedPost.images) } catch { }
+    try { if (selectedPost.videos) videos = JSON.parse(selectedPost.videos) } catch { }
     let tags: string[] = []
-    try { if (selectedPost.tags) tags = JSON.parse(selectedPost.tags) } catch {}
+    try { if (selectedPost.tags) tags = JSON.parse(selectedPost.tags) } catch { }
 
     return (
       <section id="blog" className="section blog-section">
         <div className="container">
           <button className="blog-back-btn" onClick={() => setSelectedPost(null)}>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 15L5 9L11 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M11 15L5 9L11 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
             Voltar
           </button>
 
@@ -160,10 +160,10 @@ export default function Blog({ content }: BlogProps) {
                       ))}
                     </div>
                     <button className="blog-carousel-btn blog-carousel-prev" onClick={() => setCurrentImage((p) => Math.max(0, p - 1))} disabled={currentImage === 0}>
-                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13 16L7 10L13 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M13 16L7 10L13 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </button>
                     <button className="blog-carousel-btn blog-carousel-next" onClick={() => setCurrentImage((p) => Math.min(images.length - 1, p + 1))} disabled={currentImage === images.length - 1}>
-                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7 4L13 10L7 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M7 4L13 10L7 16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </button>
                     <div className="blog-carousel-dots">
                       {images.map((_, i) => (
@@ -276,7 +276,7 @@ export default function Blog({ content }: BlogProps) {
             {content.blog_title_prefix || 'Últimas do'} <span className="highlight">{content.blog_title_highlight || 'Blog'}</span>
           </h2>
           <p className="section-subtitle">
-            {content.blog_subtitle || 'Acompanhe as novidades do Colégio São Judas Tadeu.'}
+            {content.blog_subtitle || 'Acompanhe as novidades da Escola Pequenos Brilhantes.'}
           </p>
         </div>
 
@@ -299,8 +299,8 @@ export default function Blog({ content }: BlogProps) {
                   {posts.map((post) => {
                     let tags: string[] = []
                     let images: { url: string }[] = []
-                    try { if (post.tags) tags = JSON.parse(post.tags) } catch {}
-                    try { if (post.images) images = JSON.parse(post.images) } catch {}
+                    try { if (post.tags) tags = JSON.parse(post.tags) } catch { }
+                    try { if (post.images) images = JSON.parse(post.images) } catch { }
                     return (
                       <div key={post.id} className="blog-card" onClick={() => openPost(post.id)}>
                         {images.length > 0 && (
@@ -345,7 +345,7 @@ export default function Blog({ content }: BlogProps) {
 
             {loading && posts.length === 0 && (
               <div className="blog-grid">
-                {[1,2,3,4,5,6].map((i) => (
+                {[1, 2, 3, 4, 5, 6].map((i) => (
                   <div key={i} className="blog-card blog-card-skeleton">
                     <div className="blog-card-img-wrapper skeleton-pulse" />
                     <div className="blog-card-body">
@@ -370,7 +370,7 @@ export default function Blog({ content }: BlogProps) {
                   className="blog-search-input"
                 />
                 <button type="submit" className="blog-search-btn">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5"/><path d="M11 11L14.5 14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeWidth="1.5" /><path d="M11 11L14.5 14.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" /></svg>
                 </button>
               </form>
 
