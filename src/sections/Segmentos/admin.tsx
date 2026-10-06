@@ -64,7 +64,10 @@ export default function SegmentosAdmin({ content, onUpdate, onUpdateListItem, on
                     <input value={item.link_href || ''} onChange={(e) => onUpdateListItem('_seg_items', item._id, 'link_href', e.target.value)} />
                   </div>
                 </div>
-                <button className="btn btn-sm" onClick={() => setEditingItemId(null)}>Concluído</button>
+                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                  <button className="btn btn-sm" onClick={() => setEditingItemId(null)}>Concluído</button>
+                  <button className="btn btn-sm btn-danger" onClick={() => { onRemoveListItem('_seg_items', item._id); setEditingItemId(null) }}>✕ Remover</button>
+                </div>
               </div>
             ) : (
               <div className="admin-list-summary">

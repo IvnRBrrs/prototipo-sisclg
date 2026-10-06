@@ -40,7 +40,10 @@ export default function FAQAdmin({ content, onUpdate, onUpdateListItem, onAddLis
                   <label>Resposta</label>
                   <textarea rows={3} value={item.a || ''} onChange={(e) => onUpdateListItem('_faq_items', item._id, 'a', e.target.value)} />
                 </div>
-                <button className="btn btn-sm" onClick={() => setEditingItemId(null)}>Concluído</button>
+                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                  <button className="btn btn-sm" onClick={() => setEditingItemId(null)}>Concluído</button>
+                  <button className="btn btn-sm btn-danger" onClick={() => { onRemoveListItem('_faq_items', item._id); setEditingItemId(null) }}>✕ Remover</button>
+                </div>
               </div>
             ) : (
               <div className="admin-list-summary">

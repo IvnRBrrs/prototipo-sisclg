@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../cms/api'
-import { AdminLogin, AdminDashboard, SectionEditor, PageManager, ImageLibrary, StyleEditor, BackupRestore, UserManager, HistoricoAlunos, HistoricoEditor, SupabaseUserManager, TurmasManager, ProfessoresManager, DisciplinasManager, MatriculasManager, NotasManager, FrequenciaManager, DiarioClasseManager, CadastroManager, OcorrenciasManager, ConselhoClasseManager, AnosLetivosManager, GradeHorariaManager, OrganizationsManager } from './index'
+import { AdminLogin, AdminDashboard, SectionEditor, PageManager, ImageLibrary, StyleEditor, BackupRestore, UserManager, HistoricoAlunos, HistoricoEditor, SupabaseUserManager, TurmasManager, ProfessoresManager, DisciplinasManager, MatriculasManager, NotasManager, FrequenciaManager, DiarioClasseManager, CadastroManager, ThemeEditor, OcorrenciasManager, ConselhoClasseManager, AnosLetivosManager, GradeHorariaManager, OrganizationsManager } from './index'
 import AdminLoginSupabase from './AdminLoginSupabase'
 import { getRoleFromToken, getUsernameFromToken, ROLES } from '../cms/auth'
 import { fetchAdminPreload, fetchLoginLog, deleteLoginLog, fetchOrganizations, type Organization } from '../cms/api'
@@ -12,6 +12,7 @@ const VIEW_GROUP: Record<string, string> = {
   pages: 'conteudo',
   section: 'conteudo',
   images: 'conteudo',
+  theme: 'conteudo',
   messages: 'comunicacao',
   pre_enrollments: 'comunicacao',
   historico_alunos: 'cadastros',
@@ -388,6 +389,8 @@ export default function AdminApp() {
         return <PreEnrollmentsList onUnreadChange={setUnreadPreEnrollments} />
       case 'images':
         return <ImageLibrary />
+      case 'theme':
+        return <ThemeEditor />
       case 'users':
         return <UserManager currentUsername={getUsernameFromToken() || ''} activeCompanyId={companyId} />
       case 'supabase_users':
@@ -513,6 +516,9 @@ export default function AdminApp() {
               ) : null}
               {role === ROLES.SUPER_ADMIN || role === ROLES.EDITOR_ADMIN || role === ROLES.GESTOR_ADMIN ? (
                 <button className={view === 'images' ? 'active' : ''} onClick={() => setView('images')}>Imagens</button>
+              ) : null}
+              {role === ROLES.SUPER_ADMIN || role === ROLES.EDITOR_ADMIN || role === ROLES.GESTOR_ADMIN ? (
+                <button className={view === 'theme' ? 'active' : ''} onClick={() => setView('theme')}>Cores do Site</button>
               ) : null}
             </SidebarGroup>
           ) : null}

@@ -56,7 +56,10 @@ export default function GaleriaAdmin({ content, onUpdate, onUpdateListItem, onAd
                   <label>Nome do Arquivo</label>
                   <input value={item.filename || ''} onChange={(e) => onUpdateListItem('_gal_images', item._id, 'filename', e.target.value)} placeholder="ex: carrossel-1.jpg" />
                 </div>
-                <button className="btn btn-sm" onClick={() => setEditingItemId(null)}>Concluído</button>
+                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                  <button className="btn btn-sm" onClick={() => setEditingItemId(null)}>Concluído</button>
+                  <button className="btn btn-sm btn-danger" onClick={() => { onRemoveListItem('_gal_images', item._id); setEditingItemId(null) }}>✕ Remover</button>
+                </div>
               </div>
             ) : (
               <div className="admin-list-summary">

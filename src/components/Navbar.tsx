@@ -15,15 +15,12 @@ const menuItems: MenuItem[] = [
       { label: 'Nossa História', href: '#historia' },
       { label: 'Anos Iniciais', href: '#segmentos' },
       { label: 'Anos Finais', href: '#segmentos' },
-      { label: 'Ensino Médio', href: '#segmentos' },
     ],
   },
   {
     label: 'Links',
     dropdown: [
-      { label: 'Activesoft', href: 'https://siga03.activesoft.com.br/login/?instituicao=SAOJUDAS', external: true },
       { label: 'Área do Aluno', href: 'http://drive.google.com/drive/folders/0AIjBGxYgeUOYUk9PVA', external: true },
-      { label: 'Portal SAE', href: 'https://app.sae.digital/entrar/', external: true },
     ],
   },
   { label: 'Blog', href: '#blog' },
@@ -202,7 +199,7 @@ export default function Navbar() {
           transition: height 0.3s, filter 0.3s;
         }
         .navbar:not(.scrolled) .logo-img {
-          filter: brightness(0) invert(1);
+          filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
         }
         .navbar.scrolled .logo-img {
           height: 44px;

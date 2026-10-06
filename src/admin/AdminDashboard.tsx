@@ -75,6 +75,7 @@ export default function AdminDashboard({ onNavigate, unreadMessages, unreadPreEn
       item('pages', '📄', 'Páginas', 'Gerenciar páginas e suas seções', isSuperAdmin || isEditorAdmin),
       item('blog', '✍️', 'Blog', 'Gerenciar posts do blog', isSuperAdmin || isEditorAdmin || isEditorBlog || isGestorAdmin),
       item('images', '🖼️', 'Biblioteca de Imagens', 'Gerenciar imagens enviadas', isSuperAdmin || isEditorAdmin || isGestorAdmin),
+      item('theme', '🎨', 'Cores do Site', 'Personalizar o esquema de cores do site público', isSuperAdmin || isEditorAdmin || isGestorAdmin),
     ],
     comunicacao: [
       item('messages', '✉️', 'Mensagens', 'Visualizar mensagens do formulário de contato', isSuperAdmin || isGestorAdmin || isCoordenador || isSecretaria, unreadMessages),

@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import DynamicPage from './cms/DynamicPage'
 import GlobalNavbar from './components/GlobalNavbar'
 import GlobalFooter from './components/GlobalFooter'
+import DynamicTheme from './components/DynamicTheme'
 import WhatsAppButton from './components/WhatsAppButton'
 
 function isLowEnd(): boolean {
@@ -26,6 +27,7 @@ function Loading() { return <div style={{ display: 'flex', alignItems: 'center',
 function SiteLayout() {
   return (
     <div className="site-layout">
+      <DynamicTheme />
       <Suspense fallback={null}>
         <ThreeBackground />
       </Suspense>
