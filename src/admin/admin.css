@@ -2105,3 +2105,142 @@
   background: rgba(29, 78, 216, 0.08);
   border-color: var(--primary);
 }
+
+/* ===== Theme Editor (Cores do Site) ===== */
+.theme-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.theme-field {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--primary-light);
+  border-radius: 10px;
+  background: #fff;
+  flex-wrap: wrap;
+}
+
+.theme-field-info {
+  flex: 1;
+  min-width: 180px;
+}
+
+.theme-field-label {
+  font-weight: 700;
+  color: var(--primary-dark);
+  font-size: 0.9rem;
+}
+
+.theme-field-desc {
+  font-size: 0.75rem;
+  color: var(--text-light);
+  margin-top: 2px;
+}
+
+.theme-field-source {
+  font-size: 0.68rem;
+  color: var(--text-light);
+  margin-top: 4px;
+}
+
+.theme-field-source code {
+  font-size: 0.68rem;
+  color: var(--primary);
+}
+
+.theme-field-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.theme-swatch {
+  width: 44px;
+  height: 36px;
+  border-radius: 8px;
+  border: 2px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.15s;
+  flex-shrink: 0;
+}
+
+.theme-swatch:hover {
+  border-color: var(--primary);
+  transform: scale(1.05);
+}
+
+.theme-hex-input {
+  width: 90px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--primary-dark);
+  text-transform: uppercase;
+}
+
+.theme-hex-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.theme-native-picker {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  background: #fff;
+}
+
+.theme-palette {
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px;
+  background: rgba(9, 52, 106, 0.03);
+  border-radius: 8px;
+  border: 1px solid var(--primary-light);
+}
+
+.theme-palette-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.theme-palette-color {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s, border-color 0.12s;
+}
+
+.theme-palette-color:hover {
+  transform: scale(1.1);
+}
+
+.theme-palette-color.selected {
+  border-color: var(--primary-dark);
+  box-shadow: 0 0 0 2px rgba(6, 36, 74, 0.15);
+}
+
+@media (max-width: 600px) {
+  .theme-field {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .theme-field-controls {
+    width: 100%;
+    justify-content: flex-start;
+  }
+}

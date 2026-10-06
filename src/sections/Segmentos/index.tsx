@@ -69,14 +69,18 @@ export default function Segmentos({ content }: SegmentosProps) {
           background: var(--bg);
         }
         .segmentos-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          display: flex;
+          flex-wrap: wrap;
+          justify-content: center;
           gap: 28px;
         }
         .segment-card {
           display: flex;
           flex-direction: column;
           padding: 40px 32px;
+          flex: 0 1 calc(33.333% - 28px);
+          min-width: 260px;
+          max-width: 400px;
         }
         .segment-icon {
           width: 56px;
@@ -118,9 +122,14 @@ export default function Segmentos({ content }: SegmentosProps) {
         }
         @media (max-width: 900px) {
           .segmentos-grid {
-            grid-template-columns: 1fr;
+            flex-direction: column;
             max-width: 480px;
             margin: 0 auto;
+          }
+          .segment-card {
+            flex-basis: 100%;
+            min-width: 0;
+            max-width: none;
           }
         }
       `}</style>

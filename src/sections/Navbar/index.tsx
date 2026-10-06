@@ -15,7 +15,7 @@ export default function Navbar({ content }: NavbarProps) {
   try {
     const raw = content._nav_items
     if (raw) menuItems = JSON.parse(raw)
-  } catch {}
+  } catch { }
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60)
@@ -41,7 +41,7 @@ export default function Navbar({ content }: NavbarProps) {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  const schoolName = content.footer_copyright || content.hero_welcome || 'Instituição'
+  const schoolName = content.footer_copyright || content.hero_welcome || ''
   const logoSrc = content.nav_logo || ''
 
   return (
@@ -71,7 +71,7 @@ export default function Navbar({ content }: NavbarProps) {
             let dropdown: { label: string; href: string; external?: boolean }[] = []
             try {
               if (item.dropdown_items) dropdown = JSON.parse(item.dropdown_items)
-            } catch {}
+            } catch { }
 
             return (
               <div
@@ -143,7 +143,7 @@ export default function Navbar({ content }: NavbarProps) {
               let dropdown: { label: string; href: string; external?: boolean }[] = []
               try {
                 if (item.dropdown_items) dropdown = JSON.parse(item.dropdown_items)
-              } catch {}
+              } catch { }
 
               return (
                 <div key={item._id || item.label} className="mobile-group">
@@ -224,7 +224,9 @@ export default function Navbar({ content }: NavbarProps) {
           color: white;
         }
         .navbar:not(.scrolled) .logo-img {
-          filter: brightness(0) invert(1);
+          /* Sem filtro destrutivo de cor — o logo mantém suas cores originais.
+             Drop-shadow sutil para contraste no fundo escuro do hero. */
+          filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
         }
         .navbar.scrolled .logo-img {
           height: 44px;

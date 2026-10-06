@@ -3,59 +3,92 @@ interface FooterProps {
 }
 
 export default function Footer({ content }: FooterProps) {
+  const schoolName = content.footer_copyright || ''
+  const hasInstagram = !!(content.social_instagram_url || '').trim()
+  const hasLogo = !!(content.footer_logo || '').trim()
+  const hasDescription = !!(content.footer_description || '').trim()
+  const hasPhoneFixo = !!(content.footer_phone_fixo || '').trim()
+  const hasPhoneWhats = !!(content.footer_phone_whatsapp || '').trim()
+  const hasAddress = !!(content.footer_address || '').trim()
+  const hasContact = hasPhoneFixo || hasPhoneWhats || hasAddress
+  const hasLinks = !!(content.link1_url || '').trim() || !!(content.link2_url || '').trim() || !!(content.link3_url || '').trim()
+  const year = (content.footer_year || '').trim() || new Date().getFullYear().toString()
+
   return (
     <footer className="footer">
       <div className="container">
         <div className="footer-grid">
           <div className="footer-brand">
-            <img src={content.footer_logo || '/stj/assets/logo-sao-judas-tadeu.png'} alt="Colégio São Judas Tadeu" className="footer-logo" />
-            <p className="footer-desc">
-              {content.footer_description || 'Educação que transforma futuros há mais de três décadas.'}
-            </p>
-            <div className="footer-social">
-              <a href={content.social_instagram_url || 'https://instagram.com/colegiosjtm'} target="_blank" rel="noopener noreferrer" className="social-link" aria-label="Instagram">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-                </svg>
-              </a>
-              <span className="social-handle">{content.social_instagram_handle || '@colegiosjtm'}</span>
-            </div>
+            {hasLogo && (
+              <img src={content.footer_logo} alt={schoolName} className="footer-logo" />
+            )}
+            {hasDescription && (
+              <p className="footer-desc">{content.footer_description}</p>
+            )}
+            {hasInstagram && (
+              <div className="footer-social">
+                <a href={content.social_instagram_url} target="_blank" rel="noopener noreferrer" className="social-link" aria-label="Instagram">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                    <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
+                  </svg>
+                </a>
+                {(content.social_instagram_handle || '').trim() && (
+                  <span className="social-handle">{content.social_instagram_handle}</span>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="footer-contact">
-            <h4>Contato</h4>
-            <div className="footer-contact-item">
-              <span className="footer-contact-label">Fixo</span>
-              <span className="footer-contact-value">{content.footer_phone_fixo || '(82) 3512 2092'}</span>
+          {hasContact && (
+            <div className="footer-contact">
+              <h4>Contato</h4>
+              {hasPhoneFixo && (
+                <div className="footer-contact-item">
+                  <span className="footer-contact-label">Fixo</span>
+                  <span className="footer-contact-value">{content.footer_phone_fixo}</span>
+                </div>
+              )}
+              {hasPhoneWhats && (
+                <div className="footer-contact-item">
+                  <span className="footer-contact-label">WhatsApp</span>
+                  <span className="footer-contact-value">{content.footer_phone_whatsapp}</span>
+                </div>
+              )}
+              {hasAddress && (
+                <div className="footer-contact-item">
+                  <span className="footer-contact-label">Endereço</span>
+                  <span className="footer-contact-value">{content.footer_address}</span>
+                </div>
+              )}
             </div>
-            <div className="footer-contact-item">
-              <span className="footer-contact-label">WhatsApp</span>
-              <span className="footer-contact-value">{content.footer_phone_whatsapp || '(82) 98182 9620'}</span>
-            </div>
-            <div className="footer-contact-item">
-              <span className="footer-contact-label">Endereço</span>
-              <span className="footer-contact-value">{content.footer_address || 'R. Adolfo Gustavo, 435, Serraria, Maceió-AL'}</span>
-            </div>
-          </div>
+          )}
 
-          <div className="footer-links">
-            <h4>Links Úteis</h4>
-            <a href={content.link1_url || '#'} target="_blank" rel="noopener noreferrer">
-              {content.link1_label || 'Activesoft'}
-            </a>
-            <a href={content.link2_url || '#'} target="_blank" rel="noopener noreferrer">
-              {content.link2_label || 'SAE Digital'}
-            </a>
-            <a href={content.link3_url || '#'} target="_blank" rel="noopener noreferrer">
-              {content.link3_label || 'Área do Aluno'}
-            </a>
-          </div>
+          {hasLinks && (
+            <div className="footer-links">
+              <h4>Links Úteis</h4>
+              {(content.link1_url || '').trim() && (
+                <a href={content.link1_url} target="_blank" rel="noopener noreferrer">
+                  {content.link1_label || 'Link'}
+                </a>
+              )}
+              {(content.link2_url || '').trim() && (
+                <a href={content.link2_url} target="_blank" rel="noopener noreferrer">
+                  {content.link2_label || 'Link'}
+                </a>
+              )}
+              {(content.link3_url || '').trim() && (
+                <a href={content.link3_url} target="_blank" rel="noopener noreferrer">
+                  {content.link3_label || 'Link'}
+                </a>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="footer-bottom">
-          <span>{content.footer_copyright || 'Colégio São Judas Tadeu'} — {content.footer_year || '2026'}</span>
+          <span>{schoolName ? `${schoolName} — ${year}` : `© ${year}`}</span>
         </div>
       </div>
 
@@ -75,7 +108,7 @@ export default function Footer({ content }: FooterProps) {
           height: 48px;
           width: auto;
           margin-bottom: 16px;
-          filter: brightness(0) invert(1);
+          filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
         }
         .footer-desc {
           font-size: 0.9rem;

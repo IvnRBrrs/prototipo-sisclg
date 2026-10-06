@@ -39,7 +39,10 @@ export default function NavbarAdmin({ content, onUpdate, onUpdateListItem, onAdd
                   <label>Items do Dropdown (JSON array)</label>
                   <textarea rows={3} value={item.dropdown_items || ''} onChange={(e) => onUpdateListItem('_nav_items', item._id, 'dropdown_items', e.target.value)} />
                 </div>
-                <button className="btn btn-sm" onClick={() => setEditingItemId(null)}>Concluído</button>
+                <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                  <button className="btn btn-sm" onClick={() => setEditingItemId(null)}>Concluído</button>
+                  <button className="btn btn-sm btn-danger" onClick={() => { onRemoveListItem('_nav_items', item._id); setEditingItemId(null) }}>✕ Remover</button>
+                </div>
               </div>
             ) : (
               <div className="admin-list-summary">

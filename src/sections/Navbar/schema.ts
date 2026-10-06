@@ -15,8 +15,8 @@ const schema: SectionSchema = {
   defaultItems: [
     { label: 'Home', href: '#hero', is_dropdown: 'false', dropdown_items: '' },
     { label: 'O Colégio', href: '', is_dropdown: 'true', dropdown_items: JSON.stringify([{ label: 'Nossa História', href: '#historia' }, { label: 'Anos Iniciais', href: '#segmentos' }, { label: 'Anos Finais', href: '#segmentos' }, { label: 'Ensino Médio', href: '#segmentos' }]) },
-    { label: 'Links', href: '', is_dropdown: 'true', dropdown_items: JSON.stringify([{ label: 'Activesoft', href: 'https://siga03.activesoft.com.br/login/?instituicao=SAOJUDAS', external: true }, { label: 'Área do Aluno', href: 'http://drive.google.com/drive/folders/0AIjBGxYgeUOYUk9PVA', external: true }, { label: 'Portal SAE', href: 'https://app.sae.digital/entrar/', external: true }]) },
-    { label: 'Contato', href: '#contact', is_dropdown: 'false', dropdown_items: '' },
+    { label: 'Links', href: '', is_dropdown: 'true', dropdown_items: JSON.stringify([{ label: 'Área do Aluno', href: 'http://drive.google.com/drive/folders/0AIjBGxYgeUOYUk9PVA', external: true }]) },
+    { label: 'Contato', href: '/contato', is_dropdown: 'false', dropdown_items: '' },
   ],
 }
 

@@ -151,7 +151,10 @@ export default function ConteudoGenericoAdmin({
                     <label>Texto Alternativo</label>
                     <input value={img.alt || ''} onChange={(e) => onUpdateListItem('_cg_images', img._id, 'alt', e.target.value)} />
                   </div>
-                  <button className="btn btn-sm" onClick={() => setEditingItemId(null)}>Concluído</button>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                    <button className="btn btn-sm" onClick={() => setEditingItemId(null)}>Concluído</button>
+                    <button className="btn btn-sm btn-danger" onClick={() => { onRemoveListItem('_cg_images', img._id); setEditingItemId(null) }}>✕ Remover</button>
+                  </div>
                 </div>
               ) : (
                 <div className="admin-list-summary">
