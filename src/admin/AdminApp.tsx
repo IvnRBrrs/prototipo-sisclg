@@ -452,7 +452,8 @@ export default function AdminApp() {
             {companyId && (
               <div className="admin-org-chip">
                 <span className="admin-org-chip-label" title={companyId}>
-                  🏢 {activeOrgName || companyId}
+                  <img src="/favicon.svg" alt="" className="admin-org-chip-icon" />
+                  {activeOrgName || companyId}
                 </span>
                 <button type="button" className="btn btn-sm btn-outline" onClick={handleLeaveCompany}>Sair</button>
               </div>
@@ -469,7 +470,10 @@ export default function AdminApp() {
                 aria-label={`Sair da organização: ${activeOrgName || companyId}`}
                 onClick={handleLeaveCompany}
               >
-                <span className="sidebar-btn-icon">🏢<span className="sidebar-badge org-dot" /></span>
+                <span className="sidebar-btn-icon">
+                  <img src="/favicon.svg" alt="" className="admin-org-rail-icon" />
+                  <span className="sidebar-badge org-dot" />
+                </span>
               </button>
             )}
             {isSuperAdmin ? (
