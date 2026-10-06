@@ -1906,24 +1906,52 @@
   gap: 8px;
   margin: 8px 0 4px;
   padding: 8px 10px;
-  border: 1px solid var(--primary-light);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
-  background: rgba(29, 78, 216, 0.06);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .admin-org-chip-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 0.82rem;
   font-weight: 700;
-  color: var(--primary-dark);
+  color: rgba(255, 255, 255, 0.95);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.admin-org-chip-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  object-fit: contain;
 }
 
 .admin-org-chip .btn {
   padding: 4px 10px;
   font-size: 0.72rem;
   white-space: nowrap;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.admin-org-chip .btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: white;
+}
+
+.admin-org-rail-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  object-fit: contain;
+  display: block;
 }
 
 .org-active-rail {
