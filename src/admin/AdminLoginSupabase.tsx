@@ -38,7 +38,7 @@ export default function AdminLoginSupabase({ onLogin, onBack }: AdminLoginSupaba
   return (
     <div className="admin-login">
       <div className="admin-login-card">
-        <h1 style={{ textAlign: 'center' }}>Colégio São Judas Tadeu</h1>
+        <h1 style={{ textAlign: 'center' }}></h1>
         <p className="admin-login-sub" style={{ textAlign: 'center' }}>
           Login via Server S. (experimental)
         </p>

@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 const faqs = [
   {
     q: 'Quais são os horários de funcionamento da secretaria?',
-    a: 'A secretaria do Colégio São Judas Tadeu funciona de segunda a sexta-feira, das 7h às 18h, e aos sábados das 8h ao meio-dia.',
+    a: 'A secretaria da Escola Pequenos Brilhantes funciona de segunda a sexta-feira, das 7h às 18h, e aos sábados das 8h ao meio-dia.',
   },
   {
     q: 'Como faço para matricular meu filho?',
@@ -48,7 +48,7 @@ function FAQItem({ faq, index }: { faq: typeof faqs[0]; index: number }) {
           fill="none"
           className={`faq-arrow ${open ? 'open' : ''}`}
         >
-          <path d="M5 8L10 13L15 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M5 8L10 13L15 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </button>
       <AnimatePresence>
@@ -84,7 +84,7 @@ export default function FAQ() {
             Perguntas <span className="highlight">Frequentes</span>
           </h2>
           <p className="section-subtitle">
-            Tire suas principais dúvidas sobre o Colégio São Judas Tadeu.
+            Tire suas principais dúvidas sobre a Escola Pequenos Brilhantes.
           </p>
         </motion.div>
 

@@ -26,11 +26,10 @@ export interface CertificadoData {
 }
 
 const defaultCertificadoData: CertificadoData = {
-    escola: 'COLÉGIO SÃO JUDAS TADEU',
-    cnpj: '24.464.554/0001-08',
-    endereco: 'Rua Adolfo Gustavo, 435, Serraria.',
-    cidadeCep: 'Maceió-AL, CEP 57046-341',
-    website: 'www.colegiosjtm.com.br',
+    escola: 'ESCOLA PEQUENOS BRILHANTES',
+    cnpj: '24711404000117',
+    endereco: 'Rua Manoel da Silva, 150, Clima Bom II, Maceió - AL',
+    website: 'www.escolapequenosbrilhantes.com.br',
     aluno: 'SAMARA LAYS SILVA MOURA',
     nascimento: '16 de Abril de 2009',
     naturalidade: 'Maceió/AL',

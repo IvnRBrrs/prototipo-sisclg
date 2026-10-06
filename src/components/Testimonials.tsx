@@ -4,12 +4,12 @@ const depoimentos = [
   {
     nome: 'Maria Clara Silva',
     relacao: 'Mãe de aluno — Anos Iniciais',
-    texto: 'O Colégio São Judas Tadeu foi a melhor escolha para a educação dos meus filhos. A dedicação dos professores e o ambiente acolhedor fazem toda a diferença.',
+    texto: 'A Escola Pequenos Brilhantes foi a melhor escolha para a educação dos meus filhos. A dedicação dos professores e o ambiente acolhedor fazem toda a diferença.',
   },
   {
     nome: 'Carlos Eduardo Mendes',
     relacao: 'Ex-aluno — Ensino Médio',
-    texto: 'Levo comigo os valores e a base sólida que adquiri no São Judas. A formação que recebi foi essencial para minha trajetória acadêmica e profissional.',
+    texto: 'Levo comigo os valores e a base sólida que adquiri na Escola Pequenos Brilhantes. A formação que recebi foi essencial para minha trajetória acadêmica e profissional.',
   },
   {
     nome: 'Ana Beatriz Oliveira',

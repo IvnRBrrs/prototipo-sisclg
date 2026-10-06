@@ -142,7 +142,7 @@ export default function AdminDashboard({ onNavigate, unreadMessages, unreadPreEn
       )}
       <div className="admin-dashboard-header">
         <h2>Painel de Controle</h2>
-        <p>Bem-vindo ao Colégio São Judas Tadeu. Escolha uma categoria para acessar os módulos.</p>
+        <p>Bem-vindo. Escolha uma categoria para acessar os módulos.</p>
       </div>
 
       <div className="admin-dashboard-tabs">
