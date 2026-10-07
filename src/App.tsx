@@ -4,6 +4,7 @@ import DynamicPage from './cms/DynamicPage'
 import GlobalNavbar from './components/GlobalNavbar'
 import GlobalFooter from './components/GlobalFooter'
 import DynamicTheme from './components/DynamicTheme'
+import CopyProtection from './components/CopyProtection'
 import WhatsAppButton from './components/WhatsAppButton'
 
 function isLowEnd(): boolean {
@@ -28,6 +29,7 @@ function SiteLayout() {
   return (
     <div className="site-layout">
       <DynamicTheme />
+      <CopyProtection />
       <Suspense fallback={null}>
         <ThreeBackground />
       </Suspense>

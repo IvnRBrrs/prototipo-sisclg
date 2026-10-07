@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion'
 
-const whatsapp = '5582981829620'
+const whatsapp = '5582999724341'
 const message = encodeURIComponent('Olá! Gostaria de mais informações sobre a Escola Pequenos Brilhantes.')
 
 export default function WhatsAppButton() {
